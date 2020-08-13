@@ -3,7 +3,7 @@ const core = require('@actions/core');
 const { GitHub, context } = require('@actions/github');
 
 async function main() {
-  const token = core.getInput('github-token', { required: true });
+  const token = core.getInput('github_token', { required: true });
   const sha = core.getInput('sha');
 
   const client = new GitHub(token, {});
