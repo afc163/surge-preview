@@ -19,7 +19,7 @@ async function main() {
     return;
   }
 
-  core.debug(`Find PR number: ${pr.number}`);
+  core.info(`Find PR number: ${pr.number}`);
 }
 
 main().catch(err => core.setFailed(err.message));
