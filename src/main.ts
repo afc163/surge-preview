@@ -18,6 +18,8 @@ async function main() {
   if (!pr.number) {
     return;
   }
+
+  core.debug(`Find PR number: ${pr.number}`);
 }
 
 main().catch(err => core.setFailed(err.message));
