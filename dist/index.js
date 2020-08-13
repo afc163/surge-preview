@@ -40,7 +40,7 @@ require('./sourcemap-register.js');module.exports =
 /******/ 	// the startup function
 /******/ 	function startup() {
 /******/ 		// Load entry module and return exports
-/******/ 		return __webpack_require__(79);
+/******/ 		return __webpack_require__(925);
 /******/ 	};
 /******/
 /******/ 	// run startup
@@ -308,43 +308,6 @@ function escapeProperty(s) {
         .replace(/,/g, '%2C');
 }
 //# sourceMappingURL=command.js.map
-
-/***/ }),
-
-/***/ 79:
-/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
-
-"use strict";
-
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
-const core = __webpack_require__(89);
-const { GitHub, context } = __webpack_require__(196);
-function main() {
-    return __awaiter(this, void 0, void 0, function* () {
-        const token = core.getInput('github-token', { required: true });
-        const sha = core.getInput('sha');
-        const client = new GitHub(token, {});
-        const result = yield client.repos.listPullRequestsAssociatedWithCommit({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: sha || context.sha,
-        });
-        const pr = result.data.length > 0 && result.data[0];
-        if (!pr.number) {
-            return;
-        }
-    });
-}
-main().catch(err => core.setFailed(err.message));
-
 
 /***/ }),
 
@@ -3874,6 +3837,43 @@ function register (state, name, method, options) {
       }, method)()
     })
 }
+
+
+/***/ }),
+
+/***/ 925:
+/***/ (function(__unusedmodule, __unusedexports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+const core = __webpack_require__(89);
+const { GitHub, context } = __webpack_require__(196);
+function main() {
+    return __awaiter(this, void 0, void 0, function* () {
+        const token = core.getInput('github-token', { required: true });
+        const sha = core.getInput('sha');
+        const client = new GitHub(token, {});
+        const result = yield client.repos.listPullRequestsAssociatedWithCommit({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            commit_sha: sha || context.sha,
+        });
+        const pr = result.data.length > 0 && result.data[0];
+        if (!pr.number) {
+            return;
+        }
+    });
+}
+main().catch(err => core.setFailed(err.message));
 
 
 /***/ }),
