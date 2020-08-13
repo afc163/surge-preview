@@ -1,19 +1,23 @@
-import * as core from '@actions/core'
-import { wait } from './wait'
 
-async function run(): Promise<void> {
-  try {
-    const ms: string = core.getInput('milliseconds')
-    core.debug(`Waiting ${ms} milliseconds ...`) // debug is only output if you set the secret `ACTIONS_RUNNER_DEBUG` to true
+const core = require('@actions/core');
+const { GitHub, context } = require('@actions/github');
 
-    core.debug(new Date().toTimeString())
-    await wait(parseInt(ms, 10))
-    core.debug(new Date().toTimeString())
+async function main() {
+  const token = core.getInput('github-token', { required: true });
+  const sha = core.getInput('sha');
 
-    core.setOutput('time', new Date().toTimeString())
-  } catch (error) {
-    core.setFailed(error.message)
+  const client = new GitHub(token, {});
+  const result = await client.repos.listPullRequestsAssociatedWithCommit({
+    owner: context.repo.owner,
+    repo: context.repo.repo,
+    commit_sha: sha || context.sha,
+  });
+
+  const pr = result.data.length > 0 && result.data[0];
+  
+  if (!pr.number) {
+    return;
   }
 }
 
-run()
+main().catch(err => core.setFailed(err.message));

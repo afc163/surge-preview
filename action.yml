@@ -16,39 +16,5 @@ inputs:
     default: 'public'
     required: false
 runs:
-  jobs:
-    pr:
-      runs-on: ubuntu-latest
-      outputs:
-        number: ${{ steps.finder.outputs.number }}
-      steps:
-        # Find the PR associated with this push, if there is one.
-        - uses: jwalton/gh-find-current-pr@v1
-          id: finder
-          with:
-            github-token: ${{ secrets.GITHUB_TOKEN }}
-    deploy:
-      runs-on: ubuntu-latest
-      needs: pr
-      if: needs.pr.outputs.number
-      steps:
-        - uses: actions/setup-node@v2-beta
-          with:
-            node-version: 12
-        - uses: actions/checkout@v2
-        - name: Install and Build site
-          run: ${{inputs.build}}
-        - uses: bluwy/substitute-string-action@v1
-          id: repository
-          with:
-            _input-text: ${{github.repository}}
-            .: '-'
-            /: '-'
-        - name: Deploy to surge.sh
-          run: npx surge ./${{inputs.dist}} ${{steps.repository.outputs.result}}-pr-${{needs.pr.outputs.number}}.surge.sh --token ${{inputs.surge_token}}
-        - uses: marocchino/sticky-pull-request-comment@v1
-          with:
-            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-            number: ${{ needs.pr.outputs.number }}
-            message: |
-              🎊 ${{ github.sha }} has been successfully deployed to https://${{steps.repository.outputs.result}}-pr-${{needs.pr.outputs.number}}.surge.sh !
+  using: node12
+  main: 'dist/index.js'
