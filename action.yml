@@ -1,6 +1,6 @@
-name: 'Your name here'
-description: 'Provide a description here'
-author: 'Your name or organization here'
+name: 'Surge PR Preview'
+description: 'Preview website in surge.sh for every pull request'
+author: 'afc163'
 inputs:
   milliseconds: # change this
     required: true
