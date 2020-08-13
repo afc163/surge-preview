@@ -3859,7 +3859,7 @@ const core = __webpack_require__(89);
 const { GitHub, context } = __webpack_require__(196);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        const token = core.getInput('github-token', { required: true });
+        const token = core.getInput('github_token', { required: true });
         const sha = core.getInput('sha');
         const client = new GitHub(token, {});
         const result = yield client.repos.listPullRequestsAssociatedWithCommit({
