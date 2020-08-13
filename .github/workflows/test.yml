@@ -5,6 +5,7 @@ on: # rebuild any PRs and main branch changes
     branches:
       - main
       - 'releases/*'
+      - test
 
 jobs:
   build: # make sure build/ci work properly
@@ -18,7 +19,8 @@ jobs:
   test: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
-      - uses: afc163/surge-preview@main
+      - uses: actions/checkout@v2
+      - uses: ./
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           build: |
