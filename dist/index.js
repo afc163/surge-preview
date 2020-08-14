@@ -1262,19 +1262,23 @@ function findPreviousComment(octokit, repo, issue_number, header) {
     return __awaiter(this, void 0, void 0, function* () {
         const { data: comments } = yield octokit.issues.listComments(Object.assign(Object.assign({}, repo), { issue_number }));
         const h = headerComment(header);
-        return comments.find(comment => comment.body.includes(h));
+        return comments.find((comment) => comment.body.includes(h));
     });
 }
 exports.findPreviousComment = findPreviousComment;
 function updateComment(octokit, repo, comment_id, body, header, previousBody) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield octokit.issues.updateComment(Object.assign(Object.assign({}, repo), { comment_id, body: previousBody ? `${previousBody}\n${body}` : `${body}\n${headerComment(header)}` }));
+        yield octokit.issues.updateComment(Object.assign(Object.assign({}, repo), { comment_id, body: previousBody
+                ? `${previousBody}\n${body}`
+                : `${body}\n${headerComment(header)}` }));
     });
 }
 exports.updateComment = updateComment;
 function createComment(octokit, repo, issue_number, body, header, previousBody) {
     return __awaiter(this, void 0, void 0, function* () {
-        yield octokit.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number, body: previousBody ? `${previousBody}\n${body}` : `${body}\n${headerComment(header)}` }));
+        yield octokit.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number, body: previousBody
+                ? `${previousBody}\n${body}`
+                : `${body}\n${headerComment(header)}` }));
     });
 }
 exports.createComment = createComment;
@@ -4840,10 +4844,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.comment = void 0;
 const core = __importStar(__webpack_require__(89));
 const comment_1 = __webpack_require__(311);
-function comment({ repo, number, message, octokit }) {
+function comment({ repo, number, message, octokit, }) {
     return __awaiter(this, void 0, void 0, function* () {
         if (isNaN(number) || number < 1) {
-            core.info("no numbers given: skip step");
+            core.info('no numbers given: skip step');
             return;
         }
         try {
@@ -4856,8 +4860,8 @@ function comment({ repo, number, message, octokit }) {
                 yield comment_1.createComment(octokit, repo, number, body, '');
             }
         }
-        catch ({ message }) {
-            core.setFailed(message);
+        catch (err) {
+            core.setFailed(err.message);
         }
     });
 }
