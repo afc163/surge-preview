@@ -5180,47 +5180,56 @@ function main() {
             repo: github.context.repo,
             number: pr.number,
             message: `
-⚡️ Deploying PR Preview ([log](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}))
+⚡️ Deploying PR Preview... [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
             octokit,
         });
         const startTime = Date.now();
-        if (!core.getInput('build')) {
-            yield exec_1.exec(`npm install`);
-            yield exec_1.exec(`npm run build`);
-        }
-        else {
-            const buildCommands = core.getInput('build').split('\n');
-            for (const command of buildCommands) {
-                core.info(`RUN: ${command}`);
-                yield exec_1.exec(command);
-            }
-        }
-        const duration = (Date.now() - startTime) / 1000;
-        core.info(`Build time: ${duration} seconds`);
-        core.info(`Deploy to ${url}`);
-        const surgeToken = core.getInput('surge_token', { required: true });
         try {
+            if (!core.getInput('build')) {
+                yield exec_1.exec(`npm install`);
+                yield exec_1.exec(`npm run build`);
+            }
+            else {
+                const buildCommands = core.getInput('build').split('\n');
+                for (const command of buildCommands) {
+                    core.info(`RUN: ${command}`);
+                    yield exec_1.exec(command);
+                }
+            }
+            const duration = (Date.now() - startTime) / 1000;
+            core.info(`Build time: ${duration} seconds`);
+            core.info(`Deploy to ${url}`);
+            const surgeToken = core.getInput('surge_token', { required: true });
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+            commentToPullRequest_1.comment({
+                repo: github.context.repo,
+                number: pr.number,
+                message: `
+  🎊 ${github.context.sha} has been successfully build and deployed to https://${url}
+  
+  :clock1: Build time: **${duration}s**
+  
+  <sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
+  `,
+                octokit,
+            });
         }
         catch (err) {
+            commentToPullRequest_1.comment({
+                repo: github.context.repo,
+                number: pr.number,
+                message: `
+      😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+
+      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+  `,
+                octokit,
+            });
             core.setFailed(err.message);
-            return;
         }
-        commentToPullRequest_1.comment({
-            repo: github.context.repo,
-            number: pr.number,
-            message: `
-🎊 ${github.context.sha} has been successfully deployed to https://${url} !
-
-:clock1: Build time: **${duration}s**
-
-<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
-`,
-            octokit,
-        });
     });
 }
 // eslint-disable-next-line github/no-then
