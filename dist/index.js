@@ -5175,6 +5175,13 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
+        const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
+        commentToPullRequest_1.comment({
+            repo: github.context.repo,
+            number: pr.number,
+            message: `⚡️ [Deploying PR preview](https://github.com/${github.context.repo}/runs/${github.context.runId}`,
+            octokit,
+        });
         const startTime = Date.now();
         if (!core.getInput('build')) {
             yield exec_1.exec(`npm install`);
@@ -5189,7 +5196,6 @@ function main() {
         }
         const duration = (Date.now() - startTime) / 1000;
         core.info(`Build time: ${duration} seconds`);
-        const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
         core.info(`Deploy to ${url}`);
         const surgeToken = core.getInput('surge_token', { required: true });
         try {
@@ -5202,7 +5208,14 @@ function main() {
         commentToPullRequest_1.comment({
             repo: github.context.repo,
             number: pr.number,
-            message: `🎊 ${github.context.sha} has been successfully deployed to https://${url}.surge.sh !`,
+            message: `
+🎊 ${github.context.sha} has been successfully deployed to https://${url} !
+:clock1: Build time: **${duration}s**
+
+---
+
+💪🏻 By GitBub action [afc163/surge-preview](https://github.com/afc163/surge-preview).
+`,
             octokit,
         });
     });
