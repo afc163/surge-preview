@@ -5181,8 +5181,9 @@ function main() {
             number: pr.number,
             message: `
 ⚡️ [Deploying PR Preview](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${github.context.runId})
+⚡️ [Deploying PR Preview](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${github.context.runNumber})
 
-<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>💪🏻 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
             octokit,
         });
