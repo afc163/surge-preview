@@ -5217,7 +5217,7 @@ function main() {
   
 :clock1: Build time: **${duration}s**
   
-<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>💪🏻 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
                 octokit,
             });
