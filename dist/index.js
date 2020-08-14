@@ -1255,7 +1255,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteComment = exports.createComment = exports.updateComment = exports.findPreviousComment = void 0;
-function headerComment(header) {
+function headerComment(header = ': Surge Preview') {
     return `<!-- Sticky Pull Request Comment${header} -->`;
 }
 function findPreviousComment(octokit, repo, issue_number, header) {
@@ -4847,24 +4847,13 @@ function comment({ repo, number, message, octokit }) {
             return;
         }
         try {
-            const path = core.getInput("path", { required: false });
-            const header = core.getInput("header", { required: false }) || "";
-            const append = core.getInput("append", { required: false }) || false;
-            const recreate = core.getInput("recreate", { required: false }) || false;
-            const previous = yield comment_1.findPreviousComment(octokit, repo, number, header);
+            const previous = yield comment_1.findPreviousComment(octokit, repo, number, '');
             const body = message;
             if (previous) {
-                const previousBody = append && previous.body;
-                if (recreate) {
-                    yield comment_1.deleteComment(octokit, repo, previous.id);
-                    yield comment_1.createComment(octokit, repo, number, body, header, previousBody);
-                }
-                else {
-                    yield comment_1.updateComment(octokit, repo, previous.id, body, header, previousBody);
-                }
+                yield comment_1.updateComment(octokit, repo, previous.id, body, '', false);
             }
             else {
-                yield comment_1.createComment(octokit, repo, number, body, header);
+                yield comment_1.createComment(octokit, repo, number, body, '');
             }
         }
         catch ({ message }) {
