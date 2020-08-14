@@ -5010,6 +5010,25 @@ function register (state, name, method, options) {
 
 "use strict";
 
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -5024,18 +5043,17 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const core_1 = __importDefault(__webpack_require__(89));
-const github_1 = __importDefault(__webpack_require__(196));
+const github_1 = __importStar(__webpack_require__(196));
 const exec_1 = __importDefault(__webpack_require__(205));
-const { context } = github_1.default;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core_1.default.getInput('github_token', { required: true });
         const sha = core_1.default.getInput('sha');
         const octokit = github_1.default.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            commit_sha: sha || context.sha,
+            owner: github_1.context.repo.owner,
+            repo: github_1.context.repo.repo,
+            commit_sha: sha || github_1.context.sha,
         });
         const pr = result.data.length > 0 && result.data[0];
         if (!pr || !pr.number) {
@@ -5044,7 +5062,7 @@ function main() {
         core_1.default.info(`Find PR number: ${pr.number}`);
         yield exec_1.default.exec(core_1.default.getInput('build') || `npm install && npm run build`);
         const surgeToken = core_1.default.getInput('SURGE_TOKEN');
-        yield exec_1.default.exec(`npx surge ./public ${context.repo.owner}-${context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
+        yield exec_1.default.exec(`npx surge ./public ${github_1.context.repo.owner}-${github_1.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
     });
 }
 // eslint-disable-next-line github/no-then
