@@ -5176,15 +5176,13 @@ function main() {
         }
         core.info(`Find PR number: ${pr.number}`);
         const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
-        core.info(process.env.GITHUB_RUN_ID);
-        core.info(process.env.GITHUB_RUN_NUMBER);
         commentToPullRequest_1.comment({
             repo: github.context.repo,
             number: pr.number,
             message: `
-⚡️ Deploying PR Preview ([log](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${github.context.runId}))
+⚡️ Deploying PR Preview ([log](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}))
 
-<sub>💪🏻 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
             octokit,
         });
