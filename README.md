@@ -6,7 +6,7 @@ A GitHub action that preview website in [surge.sh](https://surge.sh/) for your p
 
 ![](https://user-images.githubusercontent.com/507615/90243357-58b9ff80-de61-11ea-8426-9b202d53f7ab.png)
 
-### Compared to Netlify/Vercel?
+### Compare to Netlify/Vercel?
 
 - It is **free**.
 
