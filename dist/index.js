@@ -5169,14 +5169,16 @@ function main() {
             repo: github.context.repo.repo,
             commit_sha: github.context.sha,
         });
-        core.info(JSON.stringify(result.data, null, 2));
         const pr = result.data.length > 0 && result.data[0];
+        core.info(JSON.stringify(pr, null, 2));
         if (!pr || !pr.number) {
             core.info(`No related PR found, skip it.`);
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
-        const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
+        const repoOwner = github.context.repo.owner.replace(/\./g, '-');
+        const repoName = github.context.repo.repo.replace(/\./g, '-');
+        const url = `${repoOwner}-${repoName}-pr-${pr.number}.surge.sh`;
         commentToPullRequest_1.comment({
             repo: github.context.repo,
             number: pr.number,
