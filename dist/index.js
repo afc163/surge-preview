@@ -5042,16 +5042,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const core_1 = __importDefault(__webpack_require__(89));
+const core = __importStar(__webpack_require__(89));
 const github_1 = __importStar(__webpack_require__(196));
 const exec_1 = __importDefault(__webpack_require__(205));
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        core_1.default.info(`start`);
-        core_1.default.info(`core: ${core_1.default}`);
-        const token = core_1.default.getInput('github_token', { required: true });
-        const sha = core_1.default.getInput('sha');
-        core_1.default.info(`222`);
+        core.info(`start`);
+        core.info(`core: ${core}`);
+        const token = core.getInput('github_token', { required: true });
+        const sha = core.getInput('sha');
+        core.info(`222`);
         const octokit = github_1.default.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
             owner: github_1.context.repo.owner,
@@ -5062,14 +5062,14 @@ function main() {
         if (!pr || !pr.number) {
             return;
         }
-        core_1.default.info(`Find PR number: ${pr.number}`);
-        yield exec_1.default.exec(core_1.default.getInput('build') || `npm install && npm run build`);
-        const surgeToken = core_1.default.getInput('SURGE_TOKEN');
+        core.info(`Find PR number: ${pr.number}`);
+        yield exec_1.default.exec(core.getInput('build') || `npm install && npm run build`);
+        const surgeToken = core.getInput('SURGE_TOKEN');
         yield exec_1.default.exec(`npx surge ./public ${github_1.context.repo.owner}-${github_1.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
     });
 }
 // eslint-disable-next-line github/no-then
-main().catch((err) => core_1.default.setFailed(err.message));
+main().catch((err) => core.setFailed(err.message));
 
 
 /***/ }),
