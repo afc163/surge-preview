@@ -5171,7 +5171,7 @@ function main() {
         });
         const pr = result.data.length > 0 && result.data[0];
         if (!pr || !pr.number) {
-            core.info(`No related PR found.`);
+            core.info(`No related PR found, skip it.`);
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
