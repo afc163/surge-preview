@@ -5047,8 +5047,11 @@ const github_1 = __importStar(__webpack_require__(196));
 const exec_1 = __importDefault(__webpack_require__(205));
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
+        core_1.default.info(`start`);
+        core_1.default.info(`core: ${core_1.default}`);
         const token = core_1.default.getInput('github_token', { required: true });
         const sha = core_1.default.getInput('sha');
+        core_1.default.info(`222`);
         const octokit = github_1.default.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
             owner: github_1.context.repo.owner,
