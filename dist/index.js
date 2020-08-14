@@ -5054,13 +5054,12 @@ function main() {
             commit_sha: sha || github.context.sha,
         });
         const pr = result.data.length > 0 && result.data[0];
-        core.info(`Find PR: ${JSON.stringify(pr)}`);
         if (!pr || !pr.number) {
             core.info(`No related PR found.`);
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
-        const buildCommends = core.getInput('build').split('\\n');
+        const buildCommends = core.getInput('build').split('\n');
         core.info(`${buildCommends.length}`);
         yield exec_1.exec(core.getInput('build') || `npm install && npm run build`);
         core.info(`${buildCommends.length}`);
