@@ -1,6 +1,8 @@
 import * as core from '@actions/core';
-import github, { context } from '@actions/github';
-import exec from '@actions/exec';
+import * as github from '@actions/github';
+import * as exec from '@actions/exec';
+
+const { context } = github;
 
 async function main() {
   core.info(`start`);
