@@ -5210,7 +5210,7 @@ function main() {
                 repo: github.context.repo,
                 number: pr.number,
                 message: `
-🎊 ${github.context.sha} has been successfully build and deployed to https://${url}
+🎊 ${github.context.sha} has been successfully built and deployed to https://${url}
   
 :clock1: Build time: **${duration}s**
   
