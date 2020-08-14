@@ -5059,10 +5059,16 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
-        const buildCommends = core.getInput('build').split('\n');
-        core.info(`${buildCommends.length}`);
-        yield exec_1.exec(core.getInput('build') || `npm install && npm run build`);
-        core.info(`${buildCommends.length}`);
+        if (!core.getInput('build')) {
+            yield exec_1.exec(`npm install`);
+            yield exec_1.exec(`npm run build`);
+        }
+        else {
+            const buildCommands = core.getInput('build').split('\n');
+            for (const command of buildCommands) {
+                yield exec_1.exec(command);
+            }
+        }
         const surgeToken = core.getInput('SURGE_TOKEN');
         yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
     });
