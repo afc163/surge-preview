@@ -30,7 +30,7 @@ async function main() {
       await exec(command);
     }
   }
-  const surgeToken = core.getInput('SURGE_TOKEN');
+  const surgeToken = core.getInput('surge_token', { required: true });
   await exec(
     `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${{surgeToken}}`
   );

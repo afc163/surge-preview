@@ -5070,7 +5070,7 @@ function main() {
                 yield exec_1.exec(command);
             }
         }
-        const surgeToken = core.getInput('SURGE_TOKEN');
+        const surgeToken = core.getInput('surge_token', { required: true });
         yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${{ surgeToken }}`);
     });
 }
