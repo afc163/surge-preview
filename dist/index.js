@@ -5054,6 +5054,7 @@ function main() {
             commit_sha: sha || github.context.sha,
         });
         const pr = result.data.length > 0 && result.data[0];
+        core.info(`Find PR: ${JSON.stringify(pr)}`);
         if (!pr || !pr.number) {
             core.info(`No related PR found.`);
             return;
