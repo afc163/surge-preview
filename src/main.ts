@@ -26,14 +26,14 @@ async function main() {
   } else {
     const buildCommands = core.getInput('build').split('\n');
     for (const command of buildCommands) {
-      core.info(command);
+      core.info(`RUN: ${command}`);
       await exec(command);
     }
   }
+  const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
+  core.info(`Deploy to ${url}`);
   const surgeToken = core.getInput('surge_token', { required: true });
-  await exec(
-    `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${{surgeToken}}`
-  );
+  await exec(`npx surge ./public ${url} --token ${surgeToken}`);
 }
 
 // eslint-disable-next-line github/no-then
