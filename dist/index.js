@@ -5044,8 +5044,8 @@ const github = __importStar(__webpack_require__(196));
 const exec_1 = __webpack_require__(205);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        core.info(`start`);
         const token = core.getInput('github_token', { required: true });
+        const dist = core.getInput('dist');
         const sha = core.getInput('sha');
         const octokit = github.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
@@ -5059,6 +5059,7 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
+        const startTime = Date.now();
         if (!core.getInput('build')) {
             yield exec_1.exec(`npm install`);
             yield exec_1.exec(`npm run build`);
@@ -5070,10 +5071,12 @@ function main() {
                 yield exec_1.exec(command);
             }
         }
+        const duration = (Date.now() - startTime) / 1000;
+        core.info(`Build time: ${duration} seconds`);
         const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
         core.info(`Deploy to ${url}`);
         const surgeToken = core.getInput('surge_token', { required: true });
-        yield exec_1.exec(`npx surge ./public ${url} --token ${surgeToken}`);
+        yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
     });
 }
 // eslint-disable-next-line github/no-then

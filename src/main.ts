@@ -3,8 +3,9 @@ import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 
 async function main() {
-  core.info(`start`);
   const token = core.getInput('github_token', { required: true });
+  const dist = core.getInput('dist');
+
   const sha = core.getInput('sha');
   const octokit = github.getOctokit(token);
   const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
@@ -19,7 +20,7 @@ async function main() {
     return;
   }
   core.info(`Find PR number: ${pr.number}`);
-
+  const startTime = Date.now();
   if (!core.getInput('build')) {
     await exec(`npm install`);
     await exec(`npm run build`);
@@ -30,10 +31,12 @@ async function main() {
       await exec(command);
     }
   }
+  const duration = (Date.now() - startTime) / 1000;
+  core.info(`Build time: ${duration} seconds`);
   const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
   core.info(`Deploy to ${url}`);
   const surgeToken = core.getInput('surge_token', { required: true });
-  await exec(`npx surge ./public ${url} --token ${surgeToken}`);
+  await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
 }
 
 // eslint-disable-next-line github/no-then
