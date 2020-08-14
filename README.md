@@ -2,7 +2,7 @@
 
 A GitHub action that preview website in [surge.sh](https://surge.sh/) for your pull requests.
 
-<img width="600" src="https://user-images.githubusercontent.com/507615/90241922-9c5f3a00-de5e-11ea-9b5c-eab44b83476f.png">
+<img src="https://user-images.githubusercontent.com/507615/90241922-9c5f3a00-de5e-11ea-9b5c-eab44b83476f.png">
 
 ### Why not use Netlify/Vercel
 
