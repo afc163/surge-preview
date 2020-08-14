@@ -1,7 +1,6 @@
-
-const core = require('@actions/core');
-const { GitHub, context } = require('@actions/github');
-const exec = require('@actions/exec');
+import core from '@actions/core';
+import { GitHub, context } from '@actions/github';
+import exec from '@actions/exec';
 
 async function main() {
   const token = core.getInput('github_token', { required: true });
@@ -15,7 +14,7 @@ async function main() {
   });
 
   const pr = result.data.length > 0 && result.data[0];
-  
+
   if (!pr.number) {
     return;
   }
@@ -24,7 +23,10 @@ async function main() {
 
   await exec.exec(core.getInput('build') || `npm install && npm run build`);
   const surgeToken = core.getInput('SURGE_TOKEN');
-  await exec.exec(`npx surge ./public ${context.repo.owner}-${context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
+  await exec.exec(
+    `npx surge ./public ${context.repo.owner}-${context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`
+  );
 }
 
-main().catch(err => core.setFailed(err.message));
+// eslint-disable-next-line github/no-then
+main().catch((err) => core.setFailed(err.message));

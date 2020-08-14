@@ -10,7 +10,7 @@
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map",
-    "test": "jest",
+    "test": "jest --passWithNoTests",
     "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
   },
   "repository": {
