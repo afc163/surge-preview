@@ -20,7 +20,8 @@ async function main() {
   }
   core.info(`Find PR number: ${pr.number}`);
   const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
-  core.info(JSON.stringify(github.context, null, 2))
+  core.info(process.env.GITHUB_RUN_ID!);
+  core.info(process.env.GITHUB_RUN_NUMBER!);
   comment({
     repo: github.context.repo,
     number: pr.number,
