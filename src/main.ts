@@ -4,10 +4,8 @@ import { exec } from '@actions/exec';
 
 async function main() {
   core.info(`start`);
-  core.info(`core: ${core}`);
   const token = core.getInput('github_token', { required: true });
   const sha = core.getInput('sha');
-  core.info(`222`);
   const octokit = github.getOctokit(token);
   const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
     owner: github.context.repo.owner,

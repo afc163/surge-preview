@@ -5045,10 +5045,8 @@ const exec_1 = __webpack_require__(205);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`start`);
-        core.info(`core: ${core}`);
         const token = core.getInput('github_token', { required: true });
         const sha = core.getInput('sha');
-        core.info(`222`);
         const octokit = github.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
             owner: github.context.repo.owner,
@@ -5060,6 +5058,9 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
+        const buildCommends = core.getInput('build').split('\\n');
+        console.log(buildCommends);
+        core.info(buildCommends.length + '');
         yield exec_1.exec(core.getInput('build') || `npm install && npm run build`);
         const surgeToken = core.getInput('SURGE_TOKEN');
         yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
