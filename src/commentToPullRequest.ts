@@ -31,13 +31,13 @@ export async function comment({
   }
 
   try {
-    const previous = await findPreviousComment(octokit, repo, number, '');
+    const previous = await findPreviousComment(octokit, repo, number);
     const body = message;
 
     if (previous) {
-      await updateComment(octokit, repo, previous.id, body, '', false);
+      await updateComment(octokit, repo, previous.id, body, undefined, false);
     } else {
-      await createComment(octokit, repo, number, body, '');
+      await createComment(octokit, repo, number, body);
     }
   } catch (err) {
     core.setFailed(err.message);

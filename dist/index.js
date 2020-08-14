@@ -4851,13 +4851,13 @@ function comment({ repo, number, message, octokit, }) {
             return;
         }
         try {
-            const previous = yield comment_1.findPreviousComment(octokit, repo, number, '');
+            const previous = yield comment_1.findPreviousComment(octokit, repo, number);
             const body = message;
             if (previous) {
-                yield comment_1.updateComment(octokit, repo, previous.id, body, '', false);
+                yield comment_1.updateComment(octokit, repo, previous.id, body, undefined, false);
             }
             else {
-                yield comment_1.createComment(octokit, repo, number, body, '');
+                yield comment_1.createComment(octokit, repo, number, body);
             }
         }
         catch (err) {
@@ -5210,11 +5210,10 @@ function main() {
             number: pr.number,
             message: `
 🎊 ${github.context.sha} has been successfully deployed to https://${url} !
+
 :clock1: Build time: **${duration}s**
 
----
-
-💪🏻 By GitBub action [afc163/surge-preview](https://github.com/afc163/surge-preview).
+<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
             octokit,
         });

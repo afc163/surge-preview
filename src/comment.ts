@@ -8,7 +8,7 @@ export async function findPreviousComment(
   octokit: Octokit,
   repo: Repo,
   issue_number: number,
-  header: string
+  header?: string
 ) {
   const { data: comments } = await octokit.issues.listComments({
     ...repo,
@@ -17,12 +17,13 @@ export async function findPreviousComment(
   const h = headerComment(header);
   return comments.find((comment) => comment.body.includes(h));
 }
+
 export async function updateComment(
   octokit: Octokit,
   repo: Repo,
   comment_id: number,
   body: string,
-  header: string,
+  header?: string,
   previousBody?: string | false
 ) {
   await octokit.issues.updateComment({
@@ -33,12 +34,13 @@ export async function updateComment(
       : `${body}\n${headerComment(header)}`,
   });
 }
+
 export async function createComment(
   octokit: Octokit,
   repo: Repo,
   issue_number: number,
   body: string,
-  header: string,
+  header?: string,
   previousBody?: string | false
 ) {
   await octokit.issues.createComment({
@@ -49,6 +51,7 @@ export async function createComment(
       : `${body}\n${headerComment(header)}`,
   });
 }
+
 export async function deleteComment(
   octokit: Octokit,
   repo: Repo,

@@ -53,11 +53,10 @@ async function main() {
     number: pr.number,
     message: `
 🎊 ${github.context.sha} has been successfully deployed to https://${url} !
+
 :clock1: Build time: **${duration}s**
 
----
-
-💪🏻 By GitBub action [afc163/surge-preview](https://github.com/afc163/surge-preview).
+<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
     octokit,
   });
