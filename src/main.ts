@@ -1,17 +1,16 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
+import { comment } from './commentToPullRequest';
 
 async function main() {
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
-
-  const sha = core.getInput('sha');
   const octokit = github.getOctokit(token);
   const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
-    commit_sha: sha || github.context.sha,
+    commit_sha: github.context.sha,
   });
 
   const pr = result.data.length > 0 && result.data[0];
@@ -36,7 +35,18 @@ async function main() {
   const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
   core.info(`Deploy to ${url}`);
   const surgeToken = core.getInput('surge_token', { required: true });
-  await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+  try {
+    await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+  } catch (err) {
+    core.setFailed(err.message)
+    return;
+  }
+  comment({
+    repo: github.context.repo,
+    number: pr.number,
+    message: `🎊 ${github.context.sha} has been successfully deployed to https://${url}.surge.sh !`,
+    octokit,
+  });
 }
 
 // eslint-disable-next-line github/no-then

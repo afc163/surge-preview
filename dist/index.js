@@ -1239,6 +1239,55 @@ exports.getApiBaseUrl = getApiBaseUrl;
 
 /***/ }),
 
+/***/ 311:
+/***/ (function(__unusedmodule, exports) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.deleteComment = exports.createComment = exports.updateComment = exports.findPreviousComment = void 0;
+function headerComment(header) {
+    return `<!-- Sticky Pull Request Comment${header} -->`;
+}
+function findPreviousComment(octokit, repo, issue_number, header) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const { data: comments } = yield octokit.issues.listComments(Object.assign(Object.assign({}, repo), { issue_number }));
+        const h = headerComment(header);
+        return comments.find(comment => comment.body.includes(h));
+    });
+}
+exports.findPreviousComment = findPreviousComment;
+function updateComment(octokit, repo, comment_id, body, header, previousBody) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.issues.updateComment(Object.assign(Object.assign({}, repo), { comment_id, body: previousBody ? `${previousBody}\n${body}` : `${body}\n${headerComment(header)}` }));
+    });
+}
+exports.updateComment = updateComment;
+function createComment(octokit, repo, issue_number, body, header, previousBody) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.issues.createComment(Object.assign(Object.assign({}, repo), { issue_number, body: previousBody ? `${previousBody}\n${body}` : `${body}\n${headerComment(header)}` }));
+    });
+}
+exports.createComment = createComment;
+function deleteComment(octokit, repo, comment_id) {
+    return __awaiter(this, void 0, void 0, function* () {
+        yield octokit.issues.deleteComment(Object.assign(Object.assign({}, repo), { comment_id }));
+    });
+}
+exports.deleteComment = deleteComment;
+
+
+/***/ }),
+
 /***/ 328:
 /***/ (function(__unusedmodule, exports, __webpack_require__) {
 
@@ -4754,6 +4803,80 @@ exports.Octokit = Octokit;
 
 /***/ }),
 
+/***/ 813:
+/***/ (function(__unusedmodule, exports, __webpack_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    Object.defineProperty(o, k2, { enumerable: true, get: function() { return m[k]; } });
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || function (mod) {
+    if (mod && mod.__esModule) return mod;
+    var result = {};
+    if (mod != null) for (var k in mod) if (k !== "default" && Object.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
+    __setModuleDefault(result, mod);
+    return result;
+};
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.comment = void 0;
+const core = __importStar(__webpack_require__(89));
+const comment_1 = __webpack_require__(311);
+function comment({ repo, number, message, octokit }) {
+    return __awaiter(this, void 0, void 0, function* () {
+        if (isNaN(number) || number < 1) {
+            core.info("no numbers given: skip step");
+            return;
+        }
+        try {
+            const path = core.getInput("path", { required: false });
+            const header = core.getInput("header", { required: false }) || "";
+            const append = core.getInput("append", { required: false }) || false;
+            const recreate = core.getInput("recreate", { required: false }) || false;
+            const previous = yield comment_1.findPreviousComment(octokit, repo, number, header);
+            const body = message;
+            if (previous) {
+                const previousBody = append && previous.body;
+                if (recreate) {
+                    yield comment_1.deleteComment(octokit, repo, previous.id);
+                    yield comment_1.createComment(octokit, repo, number, body, header, previousBody);
+                }
+                else {
+                    yield comment_1.updateComment(octokit, repo, previous.id, body, header, previousBody);
+                }
+            }
+            else {
+                yield comment_1.createComment(octokit, repo, number, body, header);
+            }
+        }
+        catch ({ message }) {
+            core.setFailed(message);
+        }
+    });
+}
+exports.comment = comment;
+
+
+/***/ }),
+
 /***/ 835:
 /***/ (function(module) {
 
@@ -5042,16 +5165,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(89));
 const github = __importStar(__webpack_require__(196));
 const exec_1 = __webpack_require__(205);
+const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
-        const sha = core.getInput('sha');
         const octokit = github.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
-            commit_sha: sha || github.context.sha,
+            commit_sha: github.context.sha,
         });
         const pr = result.data.length > 0 && result.data[0];
         if (!pr || !pr.number) {
@@ -5076,7 +5199,19 @@ function main() {
         const url = `${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh`;
         core.info(`Deploy to ${url}`);
         const surgeToken = core.getInput('surge_token', { required: true });
-        yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+        try {
+            yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+        }
+        catch (err) {
+            core.setFailed(err.message);
+            return;
+        }
+        commentToPullRequest_1.comment({
+            repo: github.context.repo,
+            number: pr.number,
+            message: `🎊 ${github.context.sha} has been successfully deployed to https://${url}.surge.sh !`,
+            octokit,
+        });
     });
 }
 // eslint-disable-next-line github/no-then
