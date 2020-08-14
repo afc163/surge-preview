@@ -5216,6 +5216,8 @@ function main() {
 🎊 ${github.context.sha} has been successfully built and deployed to https://${url}
   
 :clock1: Build time: **${duration}s**
+
+<a href="https://${url}" target="_blank"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
   
 <sub>💪🏻 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
@@ -5228,6 +5230,8 @@ function main() {
                 number: pr.number,
                 message: `
 😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+
+<a href="https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}" target="_blank"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
