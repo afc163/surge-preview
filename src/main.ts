@@ -26,6 +26,8 @@ async function main() {
     message: `
 ⚡️ Deploying PR Preview... [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
+<img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif">
+
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
     octokit,
