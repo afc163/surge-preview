@@ -42,3 +42,8 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 - `github_token`: `secrets.GITHUB_TOKEN`.
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
+
+### Thanks to
+
+- https://github.com/jwalton/gh-find-current-pr
+- https://github.com/marocchino/sticky-pull-request-comment
