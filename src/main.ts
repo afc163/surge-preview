@@ -16,15 +16,16 @@ async function main() {
   const pr = result.data.length > 0 && result.data[0];
 
   if (!pr || !pr.number) {
+    core.info(`No related PR found.`);
     return;
   }
 
   core.info(`Find PR number: ${pr.number}`);
 
   const buildCommends = core.getInput('build').split('\\n');
-  console.log(buildCommends);
-  core.info(buildCommends.length + '');
+  core.info(`${buildCommends.length}`);
   await exec(core.getInput('build') || `npm install && npm run build`);
+  core.info(`${buildCommends.length}`);
   const surgeToken = core.getInput('SURGE_TOKEN');
   await exec(
     `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`
