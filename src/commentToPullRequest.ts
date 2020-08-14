@@ -1,13 +1,10 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import type { GitHub } from '@actions/github/lib/utils';
 import {
   findPreviousComment,
   createComment,
   updateComment,
-  deleteComment,
 } from './comment';
-import { readFileSync } from 'fs';
 
 export type Octokit = InstanceType<typeof GitHub>;
 export type Repo = {
@@ -42,7 +39,7 @@ export async function comment({
     } else {
       await createComment(octokit, repo, number, body, '');
     }
-  } catch ({ message }) {
-    core.setFailed(message);
+  } catch (err) {
+    core.setFailed(err.message);
   }
 }

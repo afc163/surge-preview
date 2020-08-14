@@ -1,6 +1,6 @@
 import type { Octokit, Repo } from './commentToPullRequest';
 
-function headerComment(header: string = ': Surge Preview') {
+function headerComment(header = ': Surge Preview') {
   return `<!-- Sticky Pull Request Comment${header} -->`;
 }
 
