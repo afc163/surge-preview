@@ -1,8 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
-import * as exec from '@actions/exec';
-
-const { context } = github;
+import { exec } from '@actions/exec';
 
 async function main() {
   core.info(`start`);
@@ -12,9 +10,9 @@ async function main() {
   core.info(`222`);
   const octokit = github.getOctokit(token);
   const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
-    owner: context.repo.owner,
-    repo: context.repo.repo,
-    commit_sha: sha || context.sha,
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    commit_sha: sha || github.context.sha,
   });
 
   const pr = result.data.length > 0 && result.data[0];
@@ -25,10 +23,10 @@ async function main() {
 
   core.info(`Find PR number: ${pr.number}`);
 
-  await exec.exec(core.getInput('build') || `npm install && npm run build`);
+  await exec(core.getInput('build') || `npm install && npm run build`);
   const surgeToken = core.getInput('SURGE_TOKEN');
-  await exec.exec(
-    `npx surge ./public ${context.repo.owner}-${context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`
+  await exec(
+    `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`
   );
 }
 

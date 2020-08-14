@@ -5038,13 +5038,10 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 const core = __importStar(__webpack_require__(89));
-const github_1 = __importStar(__webpack_require__(196));
-const exec_1 = __importDefault(__webpack_require__(205));
+const github = __importStar(__webpack_require__(196));
+const exec_1 = __webpack_require__(205);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         core.info(`start`);
@@ -5052,20 +5049,20 @@ function main() {
         const token = core.getInput('github_token', { required: true });
         const sha = core.getInput('sha');
         core.info(`222`);
-        const octokit = github_1.default.getOctokit(token);
+        const octokit = github.getOctokit(token);
         const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
-            owner: github_1.context.repo.owner,
-            repo: github_1.context.repo.repo,
-            commit_sha: sha || github_1.context.sha,
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            commit_sha: sha || github.context.sha,
         });
         const pr = result.data.length > 0 && result.data[0];
         if (!pr || !pr.number) {
             return;
         }
         core.info(`Find PR number: ${pr.number}`);
-        yield exec_1.default.exec(core.getInput('build') || `npm install && npm run build`);
+        yield exec_1.exec(core.getInput('build') || `npm install && npm run build`);
         const surgeToken = core.getInput('SURGE_TOKEN');
-        yield exec_1.default.exec(`npx surge ./public ${github_1.context.repo.owner}-${github_1.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
+        yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
     });
 }
 // eslint-disable-next-line github/no-then
