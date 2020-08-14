@@ -54,11 +54,11 @@ async function main() {
       repo: github.context.repo,
       number: pr.number,
       message: `
-  🎊 ${github.context.sha} has been successfully build and deployed to https://${url}
+🎊 ${github.context.sha} has been successfully build and deployed to https://${url}
   
-  :clock1: Build time: **${duration}s**
+:clock1: Build time: **${duration}s**
   
-  <sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>💪🏻 By [afc163/surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
       octokit,
     });
@@ -67,9 +67,9 @@ async function main() {
       repo: github.context.repo,
       number: pr.number,
       message: `
-      😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
-      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
       octokit,
     });
