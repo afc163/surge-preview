@@ -5,6 +5,9 @@ inputs:
   surge_token:
     description: 'surge.sh token'
     required: true
+  github_token:
+    description: 'github token'
+    required: true
   build:
     description: 'build scripts'
     default: |
