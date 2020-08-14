@@ -4,7 +4,11 @@ A GitHub action that preview website in [surge.sh](https://surge.sh/) for your p
 
 <img width="600" src="https://user-images.githubusercontent.com/507615/90241922-9c5f3a00-de5e-11ea-9b5c-eab44b83476f.png">
 
-### Usage:
+### Why not use Netlify/Vercel
+
+- It is **free**.
+
+### Usage
 
 Add a workflow (`.github/workflows/preview.yml`):
 
