@@ -5066,11 +5066,12 @@ function main() {
         else {
             const buildCommands = core.getInput('build').split('\n');
             for (const command of buildCommands) {
+                core.info(command);
                 yield exec_1.exec(command);
             }
         }
         const surgeToken = core.getInput('SURGE_TOKEN');
-        yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`);
+        yield exec_1.exec(`npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${{ surgeToken }}`);
     });
 }
 // eslint-disable-next-line github/no-then

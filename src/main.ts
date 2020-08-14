@@ -26,12 +26,13 @@ async function main() {
   } else {
     const buildCommands = core.getInput('build').split('\n');
     for (const command of buildCommands) {
+      core.info(command);
       await exec(command);
     }
   }
   const surgeToken = core.getInput('SURGE_TOKEN');
   await exec(
-    `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${surgeToken}}`
+    `npx surge ./public ${github.context.repo.owner}-${github.context.repo.repo}-pr-${pr.number}.surge.sh --token ${{surgeToken}}`
   );
 }
 
