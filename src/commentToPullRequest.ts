@@ -1,7 +1,12 @@
-import * as core from "@actions/core";
+import * as core from '@actions/core';
 import * as github from '@actions/github';
 import type { GitHub } from '@actions/github/lib/utils';
-import { findPreviousComment, createComment, updateComment, deleteComment } from "./comment";
+import {
+  findPreviousComment,
+  createComment,
+  updateComment,
+  deleteComment,
+} from './comment';
 import { readFileSync } from 'fs';
 
 export type Octokit = InstanceType<typeof GitHub>;
@@ -17,9 +22,14 @@ interface CommentConfig {
   octokit: Octokit;
 }
 
-export async function comment({ repo, number, message, octokit }: CommentConfig) {
+export async function comment({
+  repo,
+  number,
+  message,
+  octokit,
+}: CommentConfig) {
   if (isNaN(number) || number < 1) {
-    core.info("no numbers given: skip step");
+    core.info('no numbers given: skip step');
     return;
   }
 

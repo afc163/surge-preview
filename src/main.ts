@@ -38,7 +38,7 @@ async function main() {
   try {
     await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
   } catch (err) {
-    core.setFailed(err.message)
+    core.setFailed(err.message);
     return;
   }
   comment({
