@@ -1,13 +1,15 @@
 import core from '@actions/core';
-import { GitHub, context } from '@actions/github';
+import github from '@actions/github';
 import exec from '@actions/exec';
+
+const { context } = github;
 
 async function main() {
   const token = core.getInput('github_token', { required: true });
   const sha = core.getInput('sha');
 
-  const client = new GitHub(token, {});
-  const result = await client.repos.listPullRequestsAssociatedWithCommit({
+  const octokit = github.getOctokit(token);
+  const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
     owner: context.repo.owner,
     repo: context.repo.repo,
     commit_sha: sha || context.sha,
@@ -15,7 +17,7 @@ async function main() {
 
   const pr = result.data.length > 0 && result.data[0];
 
-  if (!pr.number) {
+  if (!pr || !pr.number) {
     return;
   }
 
