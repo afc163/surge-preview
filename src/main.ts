@@ -23,6 +23,9 @@ async function main() {
 
   core.info(`Find PR number: ${pr.number}`);
 
+  const buildCommends = core.getInput('build').split('\\n');
+  console.log(buildCommends);
+  core.info(buildCommends.length + '');
   await exec(core.getInput('build') || `npm install && npm run build`);
   const surgeToken = core.getInput('SURGE_TOKEN');
   await exec(
