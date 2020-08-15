@@ -43,6 +43,13 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
 
+### Who are using it?
+
+- https://github.com/ant-design/ant-design-pro
+- https://github.com/ant-design/pro-components
+- https://github.com/antvis/antvis.github.io
+- https://github.com/antvis/gatsby-theme-antv
+
 ### Thanks to
 
 - https://github.com/jwalton/gh-find-current-pr
