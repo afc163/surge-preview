@@ -13,7 +13,6 @@ async function main() {
     commit_sha: github.context.sha,
   });
   const pr = result.data.length > 0 && result.data[0];
-  core.info(JSON.stringify(pr, null, 2));
   if (!pr || !pr.number) {
     core.info(`No related PR found, skip it.`);
     return;
