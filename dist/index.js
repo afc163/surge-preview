@@ -5165,8 +5165,9 @@ function main() {
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
         let prNumber;
-        core.info(JSON.stringify(github.context.payload, null, 2));
-        if (github.context.payload.number && github.context.payload.eventName === 'pull_request') {
+        core.debug('github.context.payload');
+        core.debug(JSON.stringify(github.context.payload, null, 2));
+        if (github.context.payload.number && github.context.payload.pull_request) {
             prNumber = github.context.payload.number;
         }
         else {
@@ -5176,6 +5177,8 @@ function main() {
                 commit_sha: github.context.sha,
             });
             const pr = result.data.length > 0 && result.data[0];
+            core.debug('listPullRequestsAssociatedWithCommit');
+            core.debug(JSON.stringify(pr, null, 2));
             prNumber = pr ? pr.number : undefined;
         }
         if (!prNumber) {
