@@ -5169,6 +5169,7 @@ function main() {
             repo: github.context.repo.repo,
             commit_sha: github.context.sha,
         });
+        core.info(JSON.stringify(result.data, null, 2));
         const pr = result.data.length > 0 && result.data[0];
         if (!pr || !pr.number) {
             core.info(`No related PR found, skip it.`);
