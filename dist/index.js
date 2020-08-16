@@ -5165,6 +5165,7 @@ function main() {
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
         let prNumber;
+        core.info(JSON.stringify(github.context.payload, null, 2));
         if (github.context.payload.number && github.context.payload.eventName === 'pull_request') {
             prNumber = github.context.payload.number;
         }
