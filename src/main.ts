@@ -89,7 +89,7 @@ async function main() {
       octokit,
     });
     core.setFailed(err.message);
-   }
+  }
 }
 
 // eslint-disable-next-line github/no-then
