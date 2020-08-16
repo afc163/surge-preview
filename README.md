@@ -17,7 +17,7 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push]
+on: [push, pull_request]
 
 jobs:
   preview:
