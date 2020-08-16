@@ -5164,25 +5164,30 @@ function main() {
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
-        const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            commit_sha: github.context.sha,
-        });
-        core.info(JSON.stringify(github, null, 2));
-        core.info(JSON.stringify(result.data, null, 2));
-        const pr = result.data.length > 0 && result.data[0];
-        if (!pr || !pr.number) {
+        let prNumber;
+        if (github.context.payload.number && github.context.payload.eventName === 'pull_request') {
+            prNumber = github.context.payload.number;
+        }
+        else {
+            const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                commit_sha: github.context.sha,
+            });
+            const pr = result.data.length > 0 && result.data[0];
+            prNumber = pr ? pr.number : undefined;
+        }
+        if (!prNumber) {
             core.info(`No related PR found, skip it.`);
             return;
         }
-        core.info(`Find PR number: ${pr.number}`);
+        core.info(`Find PR number: ${prNumber}`);
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
-        const url = `${repoOwner}-${repoName}-pr-${pr.number}.surge.sh`;
+        const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
         commentToPullRequest_1.comment({
             repo: github.context.repo,
-            number: pr.number,
+            number: prNumber,
             message: `
 ⚡️ Deploying PR Preview... [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
@@ -5212,7 +5217,7 @@ function main() {
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
-                number: pr.number,
+                number: prNumber,
                 message: `
 🎊 ${github.context.sha} has been successfully built and deployed to https://${url}
   
@@ -5228,7 +5233,7 @@ function main() {
         catch (err) {
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
-                number: pr.number,
+                number: prNumber,
                 message: `
 😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
