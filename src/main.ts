@@ -12,6 +12,7 @@ async function main() {
     repo: github.context.repo.repo,
     commit_sha: github.context.sha,
   });
+  core.info(JSON.stringify(github, null, 2));
   core.info(JSON.stringify(result.data, null, 2));
   const pr = result.data.length > 0 && result.data[0];
   if (!pr || !pr.number) {
