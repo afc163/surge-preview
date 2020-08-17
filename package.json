@@ -1,6 +1,6 @@
 {
   "name": "surge-preview",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "private": true,
   "description": "Preview website in surge.sh for every pull request",
   "main": "lib/main.js",

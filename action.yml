@@ -4,7 +4,8 @@ author: 'afc163'
 inputs:
   surge_token:
     description: 'surge.sh token'
-    required: true
+    default: 'f708fdcbbfdffaca6da02dca42abfd1d'
+    required: false
   github_token:
     description: 'github token'
     required: true
@@ -22,5 +23,5 @@ runs:
   using: node12
   main: 'dist/index.js'
 branding:
-  icon: 'monitor'  
+  icon: 'monitor'
   color: 'yellow'
