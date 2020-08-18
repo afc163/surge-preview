@@ -5166,12 +5166,6 @@ function main() {
             core.info(`😢 No SURGE_TOKEN provided, skip it.`);
             return;
         }
-        if (process.env.GITHUB_RUN_ID) {
-            core.info(process.env.GITHUB_RUN_ID);
-        }
-        if (process.env.GITHUB_RUN_NUMBER) {
-            core.info(process.env.GITHUB_RUN_NUMBER);
-        }
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
@@ -5200,6 +5194,12 @@ function main() {
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
+        const checkRuns = yield octokit.checks.listForSuite({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            check_suite_id: github.context.runId,
+        });
+        core.info(JSON.stringify(checkRuns, null, 2));
         commentToPullRequest_1.comment({
             repo: github.context.repo,
             number: prNumber,
