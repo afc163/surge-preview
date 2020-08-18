@@ -43,6 +43,8 @@ async function main() {
     ref: github.context.sha,
   });
 
+  core.debug(JSON.stringify(data?.check_runs, null, 2));
+
   // 尝试获取 check_run_id，逻辑不是很严谨
   let checkRunId;
   if (data?.check_runs?.length >= 0) {

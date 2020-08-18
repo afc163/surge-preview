@@ -5200,6 +5200,7 @@ function main() {
             repo: github.context.repo.repo,
             ref: github.context.sha,
         });
+        core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
         if (((_a = data === null || data === void 0 ? void 0 : data.check_runs) === null || _a === void 0 ? void 0 : _a.length) >= 0) {
