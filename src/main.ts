@@ -37,27 +37,29 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
 
-  core.info('listForRef 1');
-  const checkRuns1 = await octokit.checks.listForRef({
+  const { data } = await octokit.checks.listForRef({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
     ref: github.context.sha,
   });
-  core.info(JSON.stringify(checkRuns1, null, 2));
 
-  core.info('listForRef 2');
-  const checkRuns2 = await octokit.checks.listForRef({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    ref: 'test',
-  });
-  core.info(JSON.stringify(checkRuns2, null, 2));
+  // 尝试获取 check_run_id，逻辑不是很严谨
+  let checkRunId;
+  if (data?.check_runs?.length >= 0) {
+    const checkRun = data?.check_runs?.find((item) =>
+      item.name.includes('preview')
+    );
+    checkRunId = checkRun?.id;
+  }
 
+  const buildingLogUrl = checkRunId
+    ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
+    : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
   comment({
     repo: github.context.repo,
     number: prNumber,
     message: `
-⚡️ Deploying PR Preview to [surge.sh](https://${url}) ... [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+⚡️ Deploying PR Preview to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
 <img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif">
 
