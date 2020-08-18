@@ -37,7 +37,7 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
 
-  core.info('listForRef');
+  core.info('listForRef 1');
   const checkRuns1 = await octokit.checks.listForRef({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
@@ -45,11 +45,11 @@ async function main() {
   });
   core.info(JSON.stringify(checkRuns1, null, 2));
 
-  core.info('listForSuite');
-  const checkRuns2 = await octokit.checks.listForSuite({
+  core.info('listForRef 2');
+  const checkRuns2 = await octokit.checks.listForRef({
     owner: github.context.repo.owner,
     repo: github.context.repo.repo,
-    check_suite_id: github.context.runId,
+    ref: 'test',
   });
   core.info(JSON.stringify(checkRuns2, null, 2));
 
