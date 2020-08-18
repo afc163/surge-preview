@@ -5217,7 +5217,11 @@ function main() {
             const duration = (Date.now() - startTime) / 1000;
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
-            const surgeToken = core.getInput('surge_token', { required: true });
+            const surgeToken = core.getInput('surge_token');
+            if (!surgeToken) {
+                core.info(`No SURGE_TOKEN provided, skip it.`);
+                return;
+            }
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
