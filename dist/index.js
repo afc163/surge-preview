@@ -5173,7 +5173,7 @@ function main() {
         let prNumber;
         core.debug('github.context.payload');
         core.debug(JSON.stringify(github.context.payload, null, 2));
-        core.debug(`github.context.sha: ${github.context.sha}`);
+        const gitCommitSha = github.context.payload.after;
         if (github.context.payload.number && github.context.payload.pull_request) {
             prNumber = github.context.payload.number;
         }
@@ -5181,7 +5181,7 @@ function main() {
             const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                commit_sha: github.context.payload.sha,
+                commit_sha: gitCommitSha,
             });
             const pr = result.data.length > 0 && result.data[0];
             core.debug('listPullRequestsAssociatedWithCommit');
@@ -5199,7 +5199,7 @@ function main() {
         const { data } = yield octokit.checks.listForRef({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
-            ref: github.context.payload.sha,
+            ref: gitCommitSha,
         });
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
@@ -5215,7 +5215,7 @@ function main() {
             repo: github.context.repo,
             number: prNumber,
             message: `
-⚡️ Deploying PR Preview to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
+⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
 
@@ -5244,7 +5244,7 @@ function main() {
                 repo: github.context.repo,
                 number: prNumber,
                 message: `
-🎊 ${github.context.payload.sha} has been successfully built and deployed to https://${url}
+🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
   
 :clock1: Build time: **${duration}s**
 
@@ -5260,7 +5260,7 @@ function main() {
                 repo: github.context.repo,
                 number: prNumber,
                 message: `
-😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
