@@ -4,6 +4,11 @@ import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
 async function main() {
+  const surgeToken = core.getInput('surge_token');
+  if (!surgeToken) {
+    core.info(`No SURGE_TOKEN provided, skip it.`);
+    return;
+  }
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
   const octokit = github.getOctokit(token);
@@ -59,11 +64,6 @@ async function main() {
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
-    const surgeToken = core.getInput('surge_token');
-    if (!surgeToken) {
-      core.info(`No SURGE_TOKEN provided, skip it.`);
-      return;
-    }
     await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
     comment({
       repo: github.context.repo,

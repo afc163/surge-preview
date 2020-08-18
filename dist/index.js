@@ -5161,6 +5161,11 @@ const exec_1 = __webpack_require__(205);
 const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
+        const surgeToken = core.getInput('surge_token');
+        if (!surgeToken) {
+            core.info(`No SURGE_TOKEN provided, skip it.`);
+            return;
+        }
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
@@ -5217,11 +5222,6 @@ function main() {
             const duration = (Date.now() - startTime) / 1000;
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
-            const surgeToken = core.getInput('surge_token');
-            if (!surgeToken) {
-                core.info(`No SURGE_TOKEN provided, skip it.`);
-                return;
-            }
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
