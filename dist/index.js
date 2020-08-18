@@ -5173,6 +5173,7 @@ function main() {
         let prNumber;
         core.debug('github.context.payload');
         core.debug(JSON.stringify(github.context.payload, null, 2));
+        core.debug(`github.context.sha: ${github.context.sha}`);
         if (github.context.payload.number && github.context.payload.pull_request) {
             prNumber = github.context.payload.number;
         }
@@ -5180,7 +5181,7 @@ function main() {
             const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                commit_sha: github.context.sha,
+                commit_sha: github.context.payload.sha,
             });
             const pr = result.data.length > 0 && result.data[0];
             core.debug('listPullRequestsAssociatedWithCommit');
@@ -5198,7 +5199,7 @@ function main() {
         const { data } = yield octokit.checks.listForRef({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
-            ref: github.context.sha,
+            ref: github.context.payload.sha,
         });
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
@@ -5243,7 +5244,7 @@ function main() {
                 repo: github.context.repo,
                 number: prNumber,
                 message: `
-🎊 ${github.context.sha} has been successfully built and deployed to https://${url}
+🎊 ${github.context.payload.sha} has been successfully built and deployed to https://${url}
   
 :clock1: Build time: **${duration}s**
 
