@@ -5160,10 +5160,11 @@ const github = __importStar(__webpack_require__(196));
 const exec_1 = __webpack_require__(205);
 const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
+    var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
         const surgeToken = core.getInput('surge_token');
         if (!surgeToken) {
-            core.info(`No SURGE_TOKEN provided, skip it.`);
+            core.info(`😢 No SURGE_TOKEN provided, skip it.`);
             return;
         }
         const token = core.getInput('github_token', { required: true });
@@ -5172,6 +5173,7 @@ function main() {
         let prNumber;
         core.debug('github.context.payload');
         core.debug(JSON.stringify(github.context.payload, null, 2));
+        const gitCommitSha = github.context.payload.after;
         if (github.context.payload.number && github.context.payload.pull_request) {
             prNumber = github.context.payload.number;
         }
@@ -5179,7 +5181,7 @@ function main() {
             const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
                 owner: github.context.repo.owner,
                 repo: github.context.repo.repo,
-                commit_sha: github.context.sha,
+                commit_sha: gitCommitSha,
             });
             const pr = result.data.length > 0 && result.data[0];
             core.debug('listPullRequestsAssociatedWithCommit');
@@ -5187,20 +5189,35 @@ function main() {
             prNumber = pr ? pr.number : undefined;
         }
         if (!prNumber) {
-            core.info(`No related PR found, skip it.`);
+            core.info(`😢 No related PR found, skip it.`);
             return;
         }
         core.info(`Find PR number: ${prNumber}`);
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
+        const { data } = yield octokit.checks.listForRef({
+            owner: github.context.repo.owner,
+            repo: github.context.repo.repo,
+            ref: gitCommitSha,
+        });
+        core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
+        // 尝试获取 check_run_id，逻辑不是很严谨
+        let checkRunId;
+        if (((_a = data === null || data === void 0 ? void 0 : data.check_runs) === null || _a === void 0 ? void 0 : _a.length) >= 0) {
+            const checkRun = (_b = data === null || data === void 0 ? void 0 : data.check_runs) === null || _b === void 0 ? void 0 : _b.find((item) => item.name.includes('preview'));
+            checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
+        }
+        const buildingLogUrl = checkRunId
+            ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
+            : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
         commentToPullRequest_1.comment({
             repo: github.context.repo,
             number: prNumber,
             message: `
-⚡️ Deploying PR Preview to [surge.sh](https://${url}) ... [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
-<img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif">
+<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
@@ -5227,13 +5244,13 @@ function main() {
                 repo: github.context.repo,
                 number: prNumber,
                 message: `
-🎊 ${github.context.sha} has been successfully built and deployed to https://${url}
+🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
   
 :clock1: Build time: **${duration}s**
 
-<a href="https://${url}" target="_blank"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
+<a href="https://${url}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
   
-<sub>💪🏻 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
                 octokit,
             });
@@ -5243,9 +5260,9 @@ function main() {
                 repo: github.context.repo,
                 number: prNumber,
                 message: `
-😭 Deploy PR Preview failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
-<a href="https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}" target="_blank"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
+<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
