@@ -6,8 +6,14 @@ import { comment } from './commentToPullRequest';
 async function main() {
   const surgeToken = core.getInput('surge_token');
   if (!surgeToken) {
-    core.info(`No SURGE_TOKEN provided, skip it.`);
+    core.info(`😢 No SURGE_TOKEN provided, skip it.`);
     return;
+  }
+  if (process.env.GITHUB_RUN_ID) {
+    core.info(process.env.GITHUB_RUN_ID);
+  }
+  if (process.env.GITHUB_RUN_NUMBER) {
+    core.info(process.env.GITHUB_RUN_NUMBER);
   }
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
@@ -29,7 +35,7 @@ async function main() {
     prNumber = pr ? pr.number : undefined;
   }
   if (!prNumber) {
-    core.info(`No related PR found, skip it.`);
+    core.info(`😢 No related PR found, skip it.`);
     return;
   }
   core.info(`Find PR number: ${prNumber}`);
