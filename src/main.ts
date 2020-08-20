@@ -50,9 +50,7 @@ async function main() {
   // 尝试获取 check_run_id，逻辑不是很严谨
   let checkRunId;
   if (data?.check_runs?.length >= 0) {
-    const checkRun = data?.check_runs?.find((item) =>
-      item.name.includes('preview')
-    );
+    const checkRun = data?.check_runs?.find((item) => item.name === job);
     checkRunId = checkRun?.id;
   }
 

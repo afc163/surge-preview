@@ -5207,7 +5207,7 @@ function main() {
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
         if (((_a = data === null || data === void 0 ? void 0 : data.check_runs) === null || _a === void 0 ? void 0 : _a.length) >= 0) {
-            const checkRun = (_b = data === null || data === void 0 ? void 0 : data.check_runs) === null || _b === void 0 ? void 0 : _b.find((item) => item.name.includes('preview'));
+            const checkRun = (_b = data === null || data === void 0 ? void 0 : data.check_runs) === null || _b === void 0 ? void 0 : _b.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         const buildingLogUrl = checkRunId
