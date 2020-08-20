@@ -49,6 +49,7 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 - https://github.com/ant-design/pro-components
 - https://github.com/antvis/antvis.github.io
 - https://github.com/antvis/gatsby-theme-antv
+- https://github.com/umijs/dumi
 
 ### Thanks to
 
