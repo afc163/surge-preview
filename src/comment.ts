@@ -1,7 +1,7 @@
 import type { Octokit, Repo } from './commentToPullRequest';
 
-function headerComment(header = ': Surge Preview') {
-  return `<!-- Sticky Pull Request Comment${header} -->`;
+function headerComment(header?: string) {
+  return `<!-- Sticky Pull Request Comment${header || ''} -->`;
 }
 
 export async function findPreviousComment(

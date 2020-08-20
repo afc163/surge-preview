@@ -1255,8 +1255,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.deleteComment = exports.createComment = exports.updateComment = exports.findPreviousComment = void 0;
-function headerComment(header = ': Surge Preview') {
-    return `<!-- Sticky Pull Request Comment${header} -->`;
+function headerComment(header) {
+    return `<!-- Sticky Pull Request Comment${header || ''} -->`;
 }
 function findPreviousComment(octokit, repo, issue_number, header) {
     return __awaiter(this, void 0, void 0, function* () {
@@ -4844,20 +4844,21 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.comment = void 0;
 const core = __importStar(__webpack_require__(89));
 const comment_1 = __webpack_require__(311);
-function comment({ repo, number, message, octokit, }) {
+function comment({ repo, number, message, octokit, header, }) {
     return __awaiter(this, void 0, void 0, function* () {
         if (isNaN(number) || number < 1) {
             core.info('no numbers given: skip step');
             return;
         }
+        const prefixedHeader = `: Surge Preview ${header}'`;
         try {
-            const previous = yield comment_1.findPreviousComment(octokit, repo, number);
+            const previous = yield comment_1.findPreviousComment(octokit, repo, number, prefixedHeader);
             const body = message;
             if (previous) {
-                yield comment_1.updateComment(octokit, repo, previous.id, body, undefined, false);
+                yield comment_1.updateComment(octokit, repo, previous.id, body, prefixedHeader, false);
             }
             else {
-                yield comment_1.createComment(octokit, repo, number, body);
+                yield comment_1.createComment(octokit, repo, number, body, prefixedHeader);
             }
         }
         catch (err) {
@@ -5171,13 +5172,12 @@ function main() {
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
         let prNumber;
-        core.debug('github.context.payload');
-        core.debug(JSON.stringify(github.context.payload, null, 2));
         core.debug('github.context');
         core.debug(JSON.stringify(github.context, null, 2));
-        const gitCommitSha = github.context.payload.after;
-        if (github.context.payload.number && github.context.payload.pull_request) {
-            prNumber = github.context.payload.number;
+        const { job, payload } = github.context;
+        const gitCommitSha = payload.after;
+        if (payload.number && payload.pull_request) {
+            prNumber = payload.number;
         }
         else {
             const result = yield octokit.repos.listPullRequestsAssociatedWithCommit({
@@ -5197,7 +5197,7 @@ function main() {
         core.info(`Find PR number: ${prNumber}`);
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
-        const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
+        const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
         const { data } = yield octokit.checks.listForRef({
             owner: github.context.repo.owner,
             repo: github.context.repo.repo,
@@ -5224,6 +5224,7 @@ function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
             octokit,
+            header: job,
         });
         const startTime = Date.now();
         try {
@@ -5255,6 +5256,7 @@ function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
                 octokit,
+                header: job,
             });
         }
         catch (err) {
@@ -5269,6 +5271,7 @@ function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
                 octokit,
+                header: job,
             });
             core.setFailed(err.message);
         }

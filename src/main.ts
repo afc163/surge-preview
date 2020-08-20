@@ -13,13 +13,12 @@ async function main() {
   const dist = core.getInput('dist');
   const octokit = github.getOctokit(token);
   let prNumber: number | undefined;
-  core.debug('github.context.payload');
-  core.debug(JSON.stringify(github.context.payload, null, 2));
   core.debug('github.context');
   core.debug(JSON.stringify(github.context, null, 2));
-  const gitCommitSha = github.context.payload.after;
-  if (github.context.payload.number && github.context.payload.pull_request) {
-    prNumber = github.context.payload.number;
+  const { job, payload } = github.context;
+  const gitCommitSha = payload.after;
+  if (payload.number && payload.pull_request) {
+    prNumber = payload.number;
   } else {
     const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
       owner: github.context.repo.owner,
@@ -38,7 +37,7 @@ async function main() {
   core.info(`Find PR number: ${prNumber}`);
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
   const repoName = github.context.repo.repo.replace(/\./g, '-');
-  const url = `${repoOwner}-${repoName}-pr-${prNumber}.surge.sh`;
+  const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
   const { data } = await octokit.checks.listForRef({
     owner: github.context.repo.owner,
@@ -71,6 +70,7 @@ async function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
 `,
     octokit,
+    header: job,
   });
 
   const startTime = Date.now();
@@ -102,6 +102,7 @@ async function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
       octokit,
+      header: job,
     });
   } catch (err) {
     comment({
@@ -115,6 +116,7 @@ async function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `,
       octokit,
+      header: job,
     });
     core.setFailed(err.message);
   }
