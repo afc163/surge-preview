@@ -30,3 +30,16 @@ jobs:
             npm install
             npm run build
           dist: public
+  preview2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        name: test afc163/surge-preview
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: |
+            npm install
+            npm run build
+          dist: public

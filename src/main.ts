@@ -15,6 +15,8 @@ async function main() {
   let prNumber: number | undefined;
   core.debug('github.context.payload');
   core.debug(JSON.stringify(github.context.payload, null, 2));
+  core.debug('github.context');
+  core.debug(JSON.stringify(github.context, null, 2));
   const gitCommitSha = github.context.payload.after;
   if (github.context.payload.number && github.context.payload.pull_request) {
     prNumber = github.context.payload.number;
