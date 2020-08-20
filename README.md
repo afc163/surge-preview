@@ -9,6 +9,7 @@ A GitHub action that preview website in [surge.sh](https://surge.sh/) for your p
 ### Compare to Netlify/Vercel?
 
 - It is **free**.
+- It supports multiple preview jobs.
 
 ### Usage
 
@@ -34,7 +35,46 @@ jobs:
           dist: public
 ```
 
-The preview website url will be `https://{{repository.owner}}-{{repository.name}}-pr-{{pr.number}}.surge.sh`.
+The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{actionName}}-pr-{{pr.number}}.surge.sh`.
+
+#### Multiple Jobs
+
+```yaml
+name: 🔂 Surge PR Preview
+
+on: [push, pull_request]
+
+jobs:
+  preview-job-1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: afc163/surge-preview@v1
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: |
+            npm install
+            npm run build
+          dist: public
+  preview-job-2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: afc163/surge-preview@v1
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: |
+            npm install
+            npm run build
+          dist: public
+```
+
+The preview website urls will be:
+
+- `https://{{repository.owner}}-{{repository.name}}-preview-job-1-pr-{{pr.number}}.surge.sh`
+- `https://{{repository.owner}}-{{repository.name}}-preview-job-2-pr-{{pr.number}}.surge.sh`
 
 ### Inputs
 
