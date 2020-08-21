@@ -16,7 +16,10 @@ async function main() {
   core.debug('github.context');
   core.debug(JSON.stringify(github.context, null, 2));
   const { job, payload } = github.context;
-  const gitCommitSha = payload.after;
+  core.debug(`payload.after: ${payload.after}`);
+  core.debug(`payload.after: ${payload.pull_request}`);
+  const gitCommitSha = payload.after || payload?.pull_request?.head?.sha;
+
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
   } else {
@@ -35,15 +38,40 @@ async function main() {
     return;
   }
   core.info(`Find PR number: ${prNumber}`);
+
+  const fail = (err: Error) => {
+    comment({
+      repo: github.context.repo,
+      number: prNumber!,
+      message: `
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+
+<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
+
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+  `,
+      octokit,
+      header: job,
+    });
+    core.setFailed(err.message);
+  };
+
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
-  const { data } = await octokit.checks.listForRef({
-    owner: github.context.repo.owner,
-    repo: github.context.repo.repo,
-    ref: gitCommitSha,
-  });
+  let data;
+  try {
+    const result = await octokit.checks.listForRef({
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo,
+      ref: gitCommitSha,
+    });
+    data = result.data;
+  } catch (err) {
+    fail(err);
+    return;
+  }
 
   core.debug(JSON.stringify(data?.check_runs, null, 2));
 
@@ -103,20 +131,7 @@ async function main() {
       header: job,
     });
   } catch (err) {
-    comment({
-      repo: github.context.repo,
-      number: prNumber,
-      message: `
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
-
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
-
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-      octokit,
-      header: job,
-    });
-    core.setFailed(err.message);
+    fail(err);
   }
 }
 

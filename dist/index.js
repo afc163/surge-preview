@@ -5161,7 +5161,7 @@ const github = __importStar(__webpack_require__(196));
 const exec_1 = __webpack_require__(205);
 const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
-    var _a, _b;
+    var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
         const surgeToken = core.getInput('surge_token');
         if (!surgeToken) {
@@ -5175,7 +5175,9 @@ function main() {
         core.debug('github.context');
         core.debug(JSON.stringify(github.context, null, 2));
         const { job, payload } = github.context;
-        const gitCommitSha = payload.after;
+        core.debug(`payload.after: ${payload.after}`);
+        core.debug(`payload.after: ${payload.pull_request}`);
+        const gitCommitSha = payload.after || ((_b = (_a = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha);
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
@@ -5195,19 +5197,44 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${prNumber}`);
+        const fail = (err) => {
+            commentToPullRequest_1.comment({
+                repo: github.context.repo,
+                number: prNumber,
+                message: `
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+
+<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
+
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+  `,
+                octokit,
+                header: job,
+            });
+            core.setFailed(err.message);
+        };
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
-        const { data } = yield octokit.checks.listForRef({
-            owner: github.context.repo.owner,
-            repo: github.context.repo.repo,
-            ref: gitCommitSha,
-        });
+        let data;
+        try {
+            const result = yield octokit.checks.listForRef({
+                owner: github.context.repo.owner,
+                repo: github.context.repo.repo,
+                ref: gitCommitSha,
+            });
+            data = result.data;
+        }
+        catch (err) {
+            fail(err);
+            return;
+        }
+        ;
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_a = data === null || data === void 0 ? void 0 : data.check_runs) === null || _a === void 0 ? void 0 : _a.length) >= 0) {
-            const checkRun = (_b = data === null || data === void 0 ? void 0 : data.check_runs) === null || _b === void 0 ? void 0 : _b.find((item) => item.name === job);
+        if (((_c = data === null || data === void 0 ? void 0 : data.check_runs) === null || _c === void 0 ? void 0 : _c.length) >= 0) {
+            const checkRun = (_d = data === null || data === void 0 ? void 0 : data.check_runs) === null || _d === void 0 ? void 0 : _d.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         const buildingLogUrl = checkRunId
@@ -5260,20 +5287,7 @@ function main() {
             });
         }
         catch (err) {
-            commentToPullRequest_1.comment({
-                repo: github.context.repo,
-                number: prNumber,
-                message: `
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
-
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
-
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-                octokit,
-                header: job,
-            });
-            core.setFailed(err.message);
+            fail(err);
         }
     });
 }
