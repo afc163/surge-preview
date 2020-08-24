@@ -5163,6 +5163,7 @@ const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
     var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
+        const fromForkedRepo = !core.getInput('surge_token');
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
@@ -5195,6 +5196,10 @@ function main() {
         }
         core.info(`Find PR number: ${prNumber}`);
         const fail = (err) => {
+            // if it is forked repo, don't throw error when comment
+            if (fromForkedRepo && err.name.includes('Resource not accessible by integration')) {
+                return;
+            }
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
                 number: prNumber,

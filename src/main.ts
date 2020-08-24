@@ -4,6 +4,7 @@ import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
 async function main() {
+  const fromForkedRepo = !core.getInput('surge_token');
   const surgeToken =
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
@@ -38,6 +39,13 @@ async function main() {
   core.info(`Find PR number: ${prNumber}`);
 
   const fail = (err: Error) => {
+    // if it is forked repo, don't throw error when comment
+    if (
+      fromForkedRepo &&
+      err.name.includes('Resource not accessible by integration')
+    ) {
+      return;
+    }
     comment({
       repo: github.context.repo,
       number: prNumber!,
