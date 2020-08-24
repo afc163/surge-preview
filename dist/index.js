@@ -5174,6 +5174,7 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.after: ${payload.pull_request}`);
         const gitCommitSha = payload.after || ((_b = (_a = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha);
+        core.info(JSON.stringify(github.context.repo, null, 2));
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
