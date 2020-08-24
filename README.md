@@ -6,10 +6,16 @@ A GitHub action that preview website in [surge.sh](https://surge.sh/) for your p
 
 ![](https://user-images.githubusercontent.com/507615/90243357-58b9ff80-de61-11ea-8426-9b202d53f7ab.png)
 
-### Compare to Netlify/Vercel?
+### Pros
+
+Compare to Netlify/Vercel?
 
 - It is **free**.
 - It supports multiple preview jobs.
+
+### Cons
+
+- Cannot leave comment from forked repository: https://github.community/t/github-actions-are-severely-limited-on-prs/18179
 
 ### Usage
 
