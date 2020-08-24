@@ -35,7 +35,7 @@ jobs:
           dist: public
 ```
 
-The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{actionName}}-pr-{{pr.number}}.surge.sh`.
+The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{job.name}}-pr-{{pr.number}}.surge.sh`.
 
 #### Multiple Jobs
 
