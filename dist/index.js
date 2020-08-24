@@ -5195,24 +5195,27 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${prNumber}`);
-        const fail = (err) => {
-            // if it is forked repo, don't throw error when comment
-            if (fromForkedRepo && err.name.includes('Resource not accessible by integration')) {
+        const commentIfNotForkedRepo = (message) => {
+            // if it is forked repo, don't comment
+            if (fromForkedRepo) {
                 return;
             }
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
                 number: prNumber,
-                message: `
+                message,
+                octokit,
+                header: job,
+            });
+        };
+        const fail = (err) => {
+            commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-                octokit,
-                header: job,
-            });
+    `);
             core.setFailed(err.message);
         };
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
@@ -5241,19 +5244,13 @@ function main() {
         const buildingLogUrl = checkRunId
             ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
             : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
-        commentToPullRequest_1.comment({
-            repo: github.context.repo,
-            number: prNumber,
-            message: `
+        commentIfNotForkedRepo(`
 ⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-`,
-            octokit,
-            header: job,
-        });
+  `);
         const startTime = Date.now();
         try {
             if (!core.getInput('build')) {
@@ -5271,21 +5268,15 @@ function main() {
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
-            commentToPullRequest_1.comment({
-                repo: github.context.repo,
-                number: prNumber,
-                message: `
+            commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
-  
+
 :clock1: Build time: **${duration}s**
 
 <a href="https://${url}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
-  
+
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-                octokit,
-                header: job,
-            });
+    `);
         }
         catch (err) {
             fail(err);
