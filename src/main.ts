@@ -4,11 +4,8 @@ import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
 async function main() {
-  const surgeToken = core.getInput('surge_token');
-  if (!surgeToken) {
-    core.info(`😢 No SURGE_TOKEN provided, skip it.`);
-    return;
-  }
+  const surgeToken =
+    core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
   const octokit = github.getOctokit(token);

@@ -4,7 +4,7 @@ author: 'afc163'
 inputs:
   surge_token:
     description: 'surge.sh token'
-    required: true
+    default: '6973bdb764f0d5fd07c910de27e2d7d0'
   github_token:
     description: 'github token'
     required: true

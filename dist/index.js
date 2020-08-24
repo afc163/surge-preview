@@ -5163,11 +5163,7 @@ const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
     var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
-        const surgeToken = core.getInput('surge_token');
-        if (!surgeToken) {
-            core.info(`😢 No SURGE_TOKEN provided, skip it.`);
-            return;
-        }
+        const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const octokit = github.getOctokit(token);
@@ -5229,7 +5225,6 @@ function main() {
             fail(err);
             return;
         }
-        ;
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
