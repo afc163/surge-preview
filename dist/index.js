@@ -5163,6 +5163,7 @@ const commentToPullRequest_1 = __webpack_require__(813);
 function main() {
     var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
+        const fromForkedRepo = !core.getInput('surge_token');
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
@@ -5174,6 +5175,7 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.after: ${payload.pull_request}`);
         const gitCommitSha = payload.after || ((_b = (_a = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha);
+        core.info(JSON.stringify(github.context.repo, null, 2));
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
@@ -5193,20 +5195,27 @@ function main() {
             return;
         }
         core.info(`Find PR number: ${prNumber}`);
-        const fail = (err) => {
+        const commentIfNotForkedRepo = (message) => {
+            // if it is forked repo, don't comment
+            if (fromForkedRepo) {
+                return;
+            }
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
                 number: prNumber,
-                message: `
+                message,
+                octokit,
+                header: job,
+            });
+        };
+        const fail = (err) => {
+            commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-                octokit,
-                header: job,
-            });
+    `);
             core.setFailed(err.message);
         };
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
@@ -5235,19 +5244,13 @@ function main() {
         const buildingLogUrl = checkRunId
             ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
             : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
-        commentToPullRequest_1.comment({
-            repo: github.context.repo,
-            number: prNumber,
-            message: `
+        commentIfNotForkedRepo(`
 ⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-`,
-            octokit,
-            header: job,
-        });
+  `);
         const startTime = Date.now();
         try {
             if (!core.getInput('build')) {
@@ -5265,21 +5268,15 @@ function main() {
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
             yield exec_1.exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
-            commentToPullRequest_1.comment({
-                repo: github.context.repo,
-                number: prNumber,
-                message: `
+            commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
-  
+
 :clock1: Build time: **${duration}s**
 
 <a href="https://${url}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
-  
+
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-  `,
-                octokit,
-                header: job,
-            });
+    `);
         }
         catch (err) {
             fail(err);
