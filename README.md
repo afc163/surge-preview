@@ -1,5 +1,15 @@
 # Surge PR Preview
 
+
+[![CI status][github-action-image]][github-action-url] [![david deps][david-image]][david-url] [![david devDeps][david-dev-image]][david-dev-url]
+
+[github-action-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
+[github-action-url]: https://github.com/afc163/surge-preview/actions?query=workflow%3Abuild-test
+[david-image]: https://img.shields.io/david/afc163/surge-preview?style=flat-square
+[david-dev-url]: https://david-dm.org/afc163/surge-preview?type=dev
+[david-dev-image]: https://img.shields.io/david/dev/afc163/surge-preview?style=flat-square
+[david-url]: https://david-dm.org/afc163/surge-preview
+
 A GitHub action that preview website in [surge.sh](https://surge.sh/) for your pull requests.
 
 <img width="800" alt="image" src="https://user-images.githubusercontent.com/507615/90243810-2230b480-de62-11ea-9a2c-9e869a2067dd.png">
