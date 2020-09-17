@@ -17,7 +17,7 @@ async function main() {
   core.debug(`payload.after: ${payload.after}`);
   core.debug(`payload.after: ${payload.pull_request}`);
   const gitCommitSha = payload.after || payload?.pull_request?.head?.sha;
-  core.info(JSON.stringify(github.context.repo, null, 2));
+  core.debug(JSON.stringify(github.context.repo, null, 2));
 
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
