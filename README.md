@@ -1,6 +1,5 @@
 # Surge PR Preview
 
-
 [![CI status][github-action-image]][github-action-url] [![david deps][david-image]][david-url] [![david devDeps][david-dev-image]][david-dev-url]
 
 [github-action-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
@@ -105,6 +104,8 @@ The preview website urls will be:
 - https://github.com/ant-design/pro-components
 - https://github.com/antvis/antvis.github.io
 - https://github.com/antvis/gatsby-theme-antv
+- https://github.com/antvis/g2
+- https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
 
 ### Thanks to
