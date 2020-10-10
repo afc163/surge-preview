@@ -11,7 +11,9 @@ async function main() {
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
-  const failOnError = !!core.getInput('failOnError');
+  const failOnError = !!(
+    core.getInput('failOnError') || process.env.FAIL_ON__ERROR
+  );
   failOnErrorGlobal = failOnError;
   core.debug(
     `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`

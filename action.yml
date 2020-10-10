@@ -20,7 +20,6 @@ inputs:
     required: false
   failOnError:
     description: 'Set `failed` if a deployment throws error'
-    default: false
 runs:
   using: node12
   main: 'dist/index.js'
