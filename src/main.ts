@@ -3,7 +3,7 @@ import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
-let failOnErrorGlobal: boolean = false;
+let failOnErrorGlobal = false;
 
 async function main() {
   const fromForkedRepo = !core.getInput('surge_token');
@@ -52,6 +52,7 @@ async function main() {
     }
     comment({
       repo: github.context.repo,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       number: prNumber!,
       message,
       octokit,

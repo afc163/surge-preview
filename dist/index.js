@@ -5206,6 +5206,7 @@ function main() {
             }
             commentToPullRequest_1.comment({
                 repo: github.context.repo,
+                // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
                 number: prNumber,
                 message,
                 octokit,
