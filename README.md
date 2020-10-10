@@ -97,6 +97,7 @@ The preview website urls will be:
 - `github_token`: `secrets.GITHUB_TOKEN`.
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
+- `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
 
 ### Who are using it?
 

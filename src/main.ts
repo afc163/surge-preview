@@ -3,12 +3,20 @@ import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
+let failOnErrorGlobal = false;
+
 async function main() {
-  const fromForkedRepo = !core.getInput('surge_token');
   const surgeToken =
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
+  const failOnError = !!(
+    core.getInput('failOnError') || process.env.FAIL_ON__ERROR
+  );
+  failOnErrorGlobal = failOnError;
+  core.debug(
+    `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`
+  );
   const octokit = github.getOctokit(token);
   let prNumber: number | undefined;
   core.debug('github.context');
@@ -18,6 +26,8 @@ async function main() {
   core.debug(`payload.after: ${payload.pull_request}`);
   const gitCommitSha = payload.after || payload?.pull_request?.head?.sha;
   core.debug(JSON.stringify(github.context.repo, null, 2));
+  const fromForkedRepo =
+    payload.pull_request?.owner === github.context.repo.owner;
 
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
@@ -45,6 +55,7 @@ async function main() {
     }
     comment({
       repo: github.context.repo,
+      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       number: prNumber!,
       message,
       octokit,
@@ -60,7 +71,9 @@ async function main() {
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
-    core.setFailed(err.message);
+    if (failOnError) {
+      core.setFailed(err.message);
+    }
   };
 
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
@@ -133,4 +146,8 @@ async function main() {
 }
 
 // eslint-disable-next-line github/no-then
-main().catch((err) => core.setFailed(err.message));
+main().catch((err) => {
+  if (failOnErrorGlobal) {
+    core.setFailed(err.message);
+  }
+});
