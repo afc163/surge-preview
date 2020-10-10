@@ -19,8 +19,10 @@
   },
   "keywords": [
     "actions",
-    "node",
-    "setup"
+    "surge",
+    "preview",
+    "pull-requests",
+    "deploy"
   ],
   "author": "afc163 <afc163@gmail.com>",
   "license": "MIT",
