@@ -5160,6 +5160,7 @@ const core = __importStar(__webpack_require__(89));
 const github = __importStar(__webpack_require__(196));
 const exec_1 = __webpack_require__(205);
 const commentToPullRequest_1 = __webpack_require__(813);
+let failOnErrorGlobal = false;
 function main() {
     var _a, _b, _c, _d;
     return __awaiter(this, void 0, void 0, function* () {
@@ -5167,6 +5168,9 @@ function main() {
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
+        const failOnError = !!core.getInput('failOnError');
+        failOnErrorGlobal = failOnError;
+        core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
         const octokit = github.getOctokit(token);
         let prNumber;
         core.debug('github.context');
@@ -5175,7 +5179,7 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.after: ${payload.pull_request}`);
         const gitCommitSha = payload.after || ((_b = (_a = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha);
-        core.info(JSON.stringify(github.context.repo, null, 2));
+        core.debug(JSON.stringify(github.context.repo, null, 2));
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
@@ -5216,7 +5220,9 @@ function main() {
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
-            core.setFailed(err.message);
+            if (failOnError) {
+                core.setFailed(err.message);
+            }
         };
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
@@ -5284,7 +5290,11 @@ function main() {
     });
 }
 // eslint-disable-next-line github/no-then
-main().catch((err) => core.setFailed(err.message));
+main().catch((err) => {
+    if (failOnErrorGlobal) {
+        core.setFailed(err.message);
+    }
+});
 
 
 /***/ }),
