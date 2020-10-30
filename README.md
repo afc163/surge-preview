@@ -106,6 +106,10 @@ The preview website urls will be:
 - https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
 - https://github.com/alibaba/hooks
+- https://github.com/youzan/vant
+- https://github.com/didi/cube-ui
+- https://github.com/didi/mand-mobile/
+- https://github.com/jdf2e/nutui/
 
 ### Thanks to
 
