@@ -22,10 +22,6 @@ Compare to Netlify/Vercel?
 - It is **free**.
 - It supports multiple preview jobs.
 
-### Cons
-
-- If you want leave comment from forked repository, you can change `on: [push, pull_request]` to `on: [push, pull_request_target]`.
-
 ### Usage
 
 Add a workflow (`.github/workflows/preview.yml`):
@@ -33,7 +29,7 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request]
+on: [push, pull_request_target]
 
 jobs:
   preview:
@@ -57,7 +53,7 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request]
+on: [push, pull_request_target]
 
 jobs:
   preview-job-1:
