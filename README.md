@@ -24,7 +24,7 @@ Compare to Netlify/Vercel?
 
 ### Cons
 
-- Cannot leave comment from forked repository: https://github.community/t/github-actions-are-severely-limited-on-prs/18179
+- If you want leave comment from forked repository, you can change `on: [push, pull_request]` to `on: [push, pull_request_target]`.
 
 ### Usage
 
