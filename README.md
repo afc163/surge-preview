@@ -105,6 +105,7 @@ The preview website urls will be:
 - https://github.com/antvis/x6
 - https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
+- https://github.com/alibaba/hooks
 
 ### Thanks to
 
