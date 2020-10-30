@@ -101,7 +101,8 @@ The preview website urls will be:
 - https://github.com/ant-design/pro-components
 - https://github.com/antvis/antvis.github.io
 - https://github.com/antvis/gatsby-theme-antv
-- https://github.com/antvis/g2
+- https://github.com/antvis/g6
+- https://github.com/antvis/x6
 - https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
 
