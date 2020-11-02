@@ -130,8 +130,13 @@ async function main() {
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
     const surgeDeployResult = await exec(
-      `npx surge ./${dist} ${url} --token ${surgeToken}`
+      `npx`,
+      ['surge', `./${dist}`, url, `--token`, surgeToken],
+      {
+        failOnStdErr: true,
+      }
     );
+    core.debug('surge deploy result');
     core.debug(JSON.stringify(surgeDeployResult, null, 2));
     commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
