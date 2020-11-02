@@ -65,7 +65,7 @@ async function main() {
 
   const fail = (err: Error) => {
     commentIfNotForkedRepo(`
-😭 Deploy PR Preview job **${job}** on ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
@@ -107,7 +107,7 @@ async function main() {
     : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
   commentIfNotForkedRepo(`
-⚡️ Deploying PR Preview job **${job}** on ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
+⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
 
@@ -129,6 +129,7 @@ async function main() {
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
+    core.debug('surge deploy result xxx');
     const surgeDeployResult = await exec(
       `npx`,
       ['surge', `./${dist}`, url, `--token`, surgeToken],
@@ -136,10 +137,10 @@ async function main() {
         failOnStdErr: true,
       }
     );
-    core.debug('surge deploy result');
+    core.debug('surge deploy result yyy');
     core.debug(JSON.stringify(surgeDeployResult, null, 2));
     commentIfNotForkedRepo(`
-🎊 PR Preview job **${job}** on ${gitCommitSha} has been successfully built and deployed to https://${url}
+🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
 :clock1: Build time: **${duration}s**
 
