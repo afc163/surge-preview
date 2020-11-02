@@ -65,7 +65,7 @@ async function main() {
 
   const fail = (err: Error) => {
     commentIfNotForkedRepo(`
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview job **${job}** on ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
 <a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
 
@@ -139,7 +139,7 @@ async function main() {
     core.debug('surge deploy result');
     core.debug(JSON.stringify(surgeDeployResult, null, 2));
     commentIfNotForkedRepo(`
-🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
+🎊 PR Preview job **${job}** on ${gitCommitSha} has been successfully built and deployed to https://${url}
 
 :clock1: Build time: **${duration}s**
 
@@ -154,6 +154,8 @@ async function main() {
 
 // eslint-disable-next-line github/no-then
 main().catch((err) => {
+  core.debug('error');
+  core.debug(JSON.stringify(err, null, 2));
   if (failOnErrorGlobal) {
     core.setFailed(err.message);
   }
