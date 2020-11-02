@@ -29,7 +29,11 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request_target]
+on:
+  pull_request_target:
+    # use default types + closed event type
+    types: [opened, synchronize, reopened, closed]
+  push:
 
 jobs:
   preview:
@@ -44,6 +48,7 @@ jobs:
             npm install
             npm run build
           dist: public
+          teardown: 'true'
 ```
 
 The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{job.name}}-pr-{{pr.number}}.surge.sh`.
@@ -53,7 +58,10 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request_target]
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened, closed]
+  push:
 
 jobs:
   preview-job-1:
@@ -68,6 +76,7 @@ jobs:
             npm install
             npm run build
           dist: public
+          teardown: 'true'
   preview-job-2:
     runs-on: ubuntu-latest
     steps:
@@ -80,6 +89,7 @@ jobs:
             npm install
             npm run build
           dist: public
+          teardown: 'true'
 ```
 
 The preview website urls will be:
@@ -94,6 +104,7 @@ The preview website urls will be:
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
 - `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
+- `teardown`: Determines if the preview instance will be torn down on PR close, defaults to `false`.
 
 ### Who are using it?
 

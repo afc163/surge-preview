@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
+import { execSurgeCommand } from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -11,6 +12,7 @@ async function main() {
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
+  const teardown = core.getInput('teardown')?.toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -22,7 +24,7 @@ async function main() {
   let prNumber: number | undefined;
   core.debug('github.context');
   core.debug(JSON.stringify(github.context, null, 2));
-  const { job, payload } = github.context;
+  const { job, payload, action } = github.context;
   core.debug(`payload.after: ${payload.after}`);
   core.debug(`payload.after: ${payload.pull_request}`);
   const gitCommitSha = payload.after || payload?.pull_request?.head?.sha;
@@ -83,6 +85,24 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
+  if (teardown && action === 'closed') {
+    try {
+      core.info(`Teardown: ${url}`);
+      core.setSecret(surgeToken);
+      await execSurgeCommand({
+        command: ['surge', 'teardown', url, `--token`, surgeToken],
+      });
+
+      return commentIfNotForkedRepo(`
+      :bomb: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed.
+        
+      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+      `);
+    } catch (err) {
+      fail?.(err);
+    }
+  }
+
   let data;
   try {
     const result = await octokit.checks.listForRef({
@@ -134,22 +154,10 @@ async function main() {
     core.info(`Deploy to ${url}`);
     core.setSecret(surgeToken);
 
-    let myOutput = '';
-    const options = {
-      listeners: {
-        stdout: (stdoutData: Buffer) => {
-          myOutput += stdoutData.toString();
-        },
-      },
-    };
-    await exec(
-      `npx`,
-      ['surge', `./${dist}`, url, `--token`, surgeToken],
-      options
-    );
-    if (myOutput && !myOutput.includes('Success')) {
-      throw new Error(myOutput);
-    }
+    await execSurgeCommand({
+      command: ['surge', `./${dist}`, url, `--token`, surgeToken],
+    });
+
     commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
