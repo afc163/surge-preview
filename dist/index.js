@@ -278,13 +278,13 @@ function main() {
             let myOutput = '';
             const options = {
                 listeners: {
-                    stdout: (data) => {
-                        myOutput += data.toString();
+                    stdout: (stdoutData) => {
+                        myOutput += stdoutData.toString();
                     },
-                }
+                },
             };
-            yield exec_1.exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken]);
-            if (!myOutput.includes('Success')) {
+            yield exec_1.exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken], options);
+            if (myOutput && !myOutput.includes('Success')) {
                 throw new Error(myOutput);
             }
             commentIfNotForkedRepo(`

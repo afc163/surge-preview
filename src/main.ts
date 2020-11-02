@@ -137,13 +137,17 @@ async function main() {
     let myOutput = '';
     const options = {
       listeners: {
-        stdout: (data: Buffer) => {
-          myOutput += data.toString();
+        stdout: (stdoutData: Buffer) => {
+          myOutput += stdoutData.toString();
         },
       },
     };
-    await exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken]);
-    if (!myOutput.includes('Success')) {
+    await exec(
+      `npx`,
+      ['surge', `./${dist}`, url, `--token`, surgeToken],
+      options
+    );
+    if (myOutput && !myOutput.includes('Success')) {
       throw new Error(myOutput);
     }
     commentIfNotForkedRepo(`
