@@ -129,8 +129,10 @@ async function main() {
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
-    await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
-
+    const surgeDeployResult = await exec(
+      `npx surge ./${dist} ${url} --token ${surgeToken}`
+    );
+    core.debug(JSON.stringify(surgeDeployResult, null, 2));
     commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
