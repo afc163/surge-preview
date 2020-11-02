@@ -4,6 +4,7 @@ import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
 let failOnErrorGlobal = false;
+let fail: (err: Error) => void;
 
 async function main() {
   const surgeToken =
@@ -63,7 +64,9 @@ async function main() {
     });
   };
 
-  const fail = (err: Error) => {
+  fail = (err: Error) => {
+    core.info('error message:');
+    core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
@@ -129,8 +132,24 @@ async function main() {
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
-    await exec(`npx surge ./${dist} ${url} --token ${surgeToken}`);
+    core.setSecret(surgeToken);
 
+    let myOutput = '';
+    const options = {
+      listeners: {
+        stdout: (stdoutData: Buffer) => {
+          myOutput += stdoutData.toString();
+        },
+      },
+    };
+    await exec(
+      `npx`,
+      ['surge', `./${dist}`, url, `--token`, surgeToken],
+      options
+    );
+    if (myOutput && !myOutput.includes('Success')) {
+      throw new Error(myOutput);
+    }
     commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
@@ -141,13 +160,11 @@ async function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
   } catch (err) {
-    fail(err);
+    fail?.(err);
   }
 }
 
 // eslint-disable-next-line github/no-then
 main().catch((err) => {
-  if (failOnErrorGlobal) {
-    core.setFailed(err.message);
-  }
+  fail?.(err);
 });
