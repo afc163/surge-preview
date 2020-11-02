@@ -22,10 +22,6 @@ Compare to Netlify/Vercel?
 - It is **free**.
 - It supports multiple preview jobs.
 
-### Cons
-
-- Cannot leave comment from forked repository: https://github.community/t/github-actions-are-severely-limited-on-prs/18179
-
 ### Usage
 
 Add a workflow (`.github/workflows/preview.yml`):
@@ -33,7 +29,7 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request]
+on: [push, pull_request_target]
 
 jobs:
   preview:
@@ -57,7 +53,7 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request]
+on: [push, pull_request_target]
 
 jobs:
   preview-job-1:
@@ -105,9 +101,15 @@ The preview website urls will be:
 - https://github.com/ant-design/pro-components
 - https://github.com/antvis/antvis.github.io
 - https://github.com/antvis/gatsby-theme-antv
-- https://github.com/antvis/g2
+- https://github.com/antvis/g6
+- https://github.com/antvis/x6
 - https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
+- https://github.com/alibaba/hooks
+- https://github.com/youzan/vant
+- https://github.com/didi/cube-ui
+- https://github.com/didi/mand-mobile/
+- https://github.com/jdf2e/nutui/
 
 ### Thanks to
 
