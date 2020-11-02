@@ -271,12 +271,10 @@ function main() {
             const duration = (Date.now() - startTime) / 1000;
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
-            core.debug('surge deploy result xxx');
-            const surgeDeployResult = yield exec_1.exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken], {
+            core.setSecret(surgeToken);
+            yield exec_1.exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken], {
                 failOnStdErr: true,
             });
-            core.debug('surge deploy result yyy');
-            core.debug(JSON.stringify(surgeDeployResult, null, 2));
             commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
