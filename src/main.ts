@@ -4,6 +4,7 @@ import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
 
 let failOnErrorGlobal = false;
+let fail: (err: Error) => void;
 
 async function main() {
   const surgeToken =
@@ -63,7 +64,9 @@ async function main() {
     });
   };
 
-  const fail = (err: Error) => {
+  fail = (err: Error) => {
+    core.info('error message:');
+    core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
@@ -143,15 +146,11 @@ async function main() {
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
   } catch (err) {
-    fail(err);
+    fail?.(err);
   }
 }
 
 // eslint-disable-next-line github/no-then
 main().catch((err) => {
-  core.debug('error');
-  core.debug(JSON.stringify(err, null, 2));
-  if (failOnErrorGlobal) {
-    core.setFailed(err.message);
-  }
+  fail?.(err);
 });

@@ -158,6 +158,7 @@ const github = __importStar(__webpack_require__(9889));
 const exec_1 = __webpack_require__(5708);
 const commentToPullRequest_1 = __webpack_require__(710);
 let failOnErrorGlobal = false;
+let fail;
 function main() {
     var _a, _b, _c, _d, _e;
     return __awaiter(this, void 0, void 0, function* () {
@@ -210,7 +211,9 @@ function main() {
                 header: job,
             });
         };
-        const fail = (err) => {
+        fail = (err) => {
+            core.info('error message:');
+            core.info(JSON.stringify(err, null, 2));
             commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
@@ -286,17 +289,13 @@ function main() {
     `);
         }
         catch (err) {
-            fail(err);
+            fail === null || fail === void 0 ? void 0 : fail(err);
         }
     });
 }
 // eslint-disable-next-line github/no-then
 main().catch((err) => {
-    core.debug('error');
-    core.debug(JSON.stringify(err, null, 2));
-    if (failOnErrorGlobal) {
-        core.setFailed(err.message);
-    }
+    fail === null || fail === void 0 ? void 0 : fail(err);
 });
 
 
