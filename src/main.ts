@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
-import { execSurgeCommand } from './helpers';
+import { execSurgeCommand, formatImage } from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -70,9 +70,15 @@ async function main() {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
+😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${
+      github.context.repo.owner
+    }/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
+${formatImage({
+  buildingLogUrl,
+  imageUrl:
+    'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
+})}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
@@ -84,26 +90,6 @@ async function main() {
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
-
-  if (teardown && action === 'closed') {
-    try {
-      core.info(`Teardown: ${url}`);
-      core.setSecret(surgeToken);
-      await execSurgeCommand({
-        command: ['surge', 'teardown', url, `--token`, surgeToken],
-      });
-
-      return commentIfNotForkedRepo(`
-      :bomb: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed.
-
-      <img width="300" src="https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png">
-        
-      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
-      `);
-    } catch (err) {
-      fail?.(err);
-    }
-  }
 
   let data;
   try {
@@ -131,10 +117,38 @@ async function main() {
     ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
     : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
+  if (teardown && action === 'closed') {
+    try {
+      core.info(`Teardown: ${url}`);
+      core.setSecret(surgeToken);
+      await execSurgeCommand({
+        command: ['surge', 'teardown', url, `--token`, surgeToken],
+      });
+
+      return commentIfNotForkedRepo(`
+      :bomb: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed.
+
+      ${formatImage({
+        buildingLogUrl,
+        imageUrl:
+          'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
+      })}
+        
+      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+      `);
+    } catch (err) {
+      return fail?.(err);
+    }
+  }
+
   commentIfNotForkedRepo(`
 ⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
+${formatImage({
+  buildingLogUrl,
+  imageUrl:
+    'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
+})}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `);
@@ -165,7 +179,11 @@ async function main() {
 
 :clock1: Build time: **${duration}s**
 
-<a href="https://${url}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
+${formatImage({
+  buildingLogUrl,
+  imageUrl:
+    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"',
+})}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
