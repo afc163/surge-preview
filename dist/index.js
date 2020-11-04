@@ -134,7 +134,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __webpack_require__(5708);
 exports.execSurgeCommand = ({ command, }) => __awaiter(void 0, void 0, void 0, function* () {
     let myOutput = '';
@@ -152,6 +152,9 @@ exports.execSurgeCommand = ({ command, }) => __awaiter(void 0, void 0, void 0, f
 });
 exports.formatImage = ({ buildingLogUrl, imageUrl, }) => {
     return `<a href="${buildingLogUrl}"><img width="300" src="${imageUrl}"></a>`;
+};
+exports.getCommentFooter = () => {
+    return '<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>';
 };
 
 
@@ -262,7 +265,7 @@ ${helpers_1.formatImage({
                 imageUrl: 'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
             })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${helpers_1.getCommentFooter()}
     `);
             if (failOnError) {
                 core.setFailed(err.message);
@@ -304,14 +307,14 @@ ${helpers_1.formatImage({
                     command: ['surge', 'teardown', url, `--token`, surgeToken],
                 });
                 return commentIfNotForkedRepo(`
-      :recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
+:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
 
-      ${helpers_1.formatImage({
+${helpers_1.formatImage({
                     buildingLogUrl,
                     imageUrl: 'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
                 })}
         
-      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${helpers_1.getCommentFooter()}
       `);
             }
             catch (err) {
@@ -326,7 +329,7 @@ ${helpers_1.formatImage({
             imageUrl: 'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
         })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${helpers_1.getCommentFooter()}
   `);
         const startTime = Date.now();
         try {
@@ -358,7 +361,7 @@ ${helpers_1.formatImage({
                 imageUrl: 'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
             })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${helpers_1.getCommentFooter()}
     `);
         }
         catch (err) {
