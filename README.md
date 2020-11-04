@@ -29,11 +29,7 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on:
-  pull_request_target:
-    # use default types + closed event type
-    types: [opened, synchronize, reopened, closed]
-  push:
+on: [pull_request_target, push]
 
 jobs:
   preview:
@@ -48,7 +44,6 @@ jobs:
             npm install
             npm run build
           dist: public
-          teardown: 'true'
 ```
 
 The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{job.name}}-pr-{{pr.number}}.surge.sh`.
@@ -58,10 +53,7 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on:
-  pull_request_target:
-    types: [opened, synchronize, reopened, closed]
-  push:
+on: [pull_request_target, push]
 
 jobs:
   preview-job-1:
@@ -76,7 +68,6 @@ jobs:
             npm install
             npm run build
           dist: public
-          teardown: 'true'
   preview-job-2:
     runs-on: ubuntu-latest
     steps:
@@ -89,13 +80,41 @@ jobs:
             npm install
             npm run build
           dist: public
-          teardown: 'true'
 ```
 
 The preview website urls will be:
 
 - `https://{{repository.owner}}-{{repository.name}}-preview-job-1-pr-{{pr.number}}.surge.sh`
 - `https://{{repository.owner}}-{{repository.name}}-preview-job-2-pr-{{pr.number}}.surge.sh`
+
+### Teardown
+
+When a pull request is closed and teardown is set to 'true', then the surge instance will be destroyed.
+
+```yaml
+name: 🔂 Surge PR Preview
+
+on:
+  pull_request_target:
+    # when using teardown: 'true', add default event types + closed event type
+    types: [opened, synchronize, reopened, closed]
+  push:
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: afc163/surge-preview@v1
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
+          teardown: 'true'
+          build: |
+            npm install
+            npm run build
+```
 
 ### Inputs
 
