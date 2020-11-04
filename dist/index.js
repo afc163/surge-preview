@@ -119,6 +119,44 @@ exports.comment = comment;
 
 /***/ }),
 
+/***/ 4155:
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
+
+"use strict";
+
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.formatImage = exports.execSurgeCommand = void 0;
+const exec_1 = __webpack_require__(5708);
+exports.execSurgeCommand = ({ command, }) => __awaiter(void 0, void 0, void 0, function* () {
+    let myOutput = '';
+    const options = {
+        listeners: {
+            stdout: (stdoutData) => {
+                myOutput += stdoutData.toString();
+            },
+        },
+    };
+    yield exec_1.exec(`npx`, command, options);
+    if (myOutput && !myOutput.includes('Success')) {
+        throw new Error(myOutput);
+    }
+});
+exports.formatImage = ({ buildingLogUrl, imageUrl, }) => {
+    return `<a href="${buildingLogUrl}"><img width="300" src="${imageUrl}"></a>`;
+};
+
+
+/***/ }),
+
 /***/ 1858:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
@@ -157,14 +195,16 @@ const core = __importStar(__webpack_require__(9498));
 const github = __importStar(__webpack_require__(9889));
 const exec_1 = __webpack_require__(5708);
 const commentToPullRequest_1 = __webpack_require__(710);
+const helpers_1 = __webpack_require__(4155);
 let failOnErrorGlobal = false;
 let fail;
 function main() {
-    var _a, _b, _c, _d, _e;
+    var _a, _b, _c, _d, _e, _f;
     return __awaiter(this, void 0, void 0, function* () {
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
+        const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
@@ -175,9 +215,9 @@ function main() {
         const { job, payload } = github.context;
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.after: ${payload.pull_request}`);
-        const gitCommitSha = payload.after || ((_b = (_a = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _a === void 0 ? void 0 : _a.head) === null || _b === void 0 ? void 0 : _b.sha);
+        const gitCommitSha = payload.after || ((_c = (_b = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _b === void 0 ? void 0 : _b.head) === null || _c === void 0 ? void 0 : _c.sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        const fromForkedRepo = ((_c = payload.pull_request) === null || _c === void 0 ? void 0 : _c.owner) === github.context.repo.owner;
+        const fromForkedRepo = ((_d = payload.pull_request) === null || _d === void 0 ? void 0 : _d.owner) === github.context.repo.owner;
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
@@ -217,7 +257,10 @@ function main() {
             commentIfNotForkedRepo(`
 😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
 
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png"></a>
+${helpers_1.formatImage({
+                buildingLogUrl,
+                imageUrl: 'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
+            })}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
@@ -244,17 +287,42 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_d = data === null || data === void 0 ? void 0 : data.check_runs) === null || _d === void 0 ? void 0 : _d.length) >= 0) {
-            const checkRun = (_e = data === null || data === void 0 ? void 0 : data.check_runs) === null || _e === void 0 ? void 0 : _e.find((item) => item.name === job);
+        if (((_e = data === null || data === void 0 ? void 0 : data.check_runs) === null || _e === void 0 ? void 0 : _e.length) >= 0) {
+            const checkRun = (_f = data === null || data === void 0 ? void 0 : data.check_runs) === null || _f === void 0 ? void 0 : _f.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         const buildingLogUrl = checkRunId
             ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
             : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
+        if (teardown && payload.action === 'closed') {
+            try {
+                core.info(`Teardown: ${url}`);
+                core.setSecret(surgeToken);
+                yield helpers_1.execSurgeCommand({
+                    command: ['surge', 'teardown', url, `--token`, surgeToken],
+                });
+                return commentIfNotForkedRepo(`
+      :recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
+
+      ${helpers_1.formatImage({
+                    buildingLogUrl,
+                    imageUrl: 'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
+                })}
+        
+      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+      `);
+            }
+            catch (err) {
+                return fail === null || fail === void 0 ? void 0 : fail(err);
+            }
+        }
         commentIfNotForkedRepo(`
 ⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
 
-<a href="${buildingLogUrl}"><img width="300" src="https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif"></a>
+${helpers_1.formatImage({
+            buildingLogUrl,
+            imageUrl: 'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
+        })}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
   `);
@@ -275,24 +343,18 @@ function main() {
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
             core.setSecret(surgeToken);
-            let myOutput = '';
-            const options = {
-                listeners: {
-                    stdout: (stdoutData) => {
-                        myOutput += stdoutData.toString();
-                    },
-                },
-            };
-            yield exec_1.exec(`npx`, ['surge', `./${dist}`, url, `--token`, surgeToken], options);
-            if (myOutput && !myOutput.includes('Success')) {
-                throw new Error(myOutput);
-            }
+            yield helpers_1.execSurgeCommand({
+                command: ['surge', `./${dist}`, url, `--token`, surgeToken],
+            });
             commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
 :clock1: Build time: **${duration}s**
 
-<a href="https://${url}"><img width="300" src="https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"></a>
+${helpers_1.formatImage({
+                buildingLogUrl,
+                imageUrl: 'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"',
+            })}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
     `);
