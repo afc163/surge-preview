@@ -24,7 +24,7 @@ async function main() {
   let prNumber: number | undefined;
   core.debug('github.context');
   core.debug(JSON.stringify(github.context, null, 2));
-  const { job, payload, action } = github.context;
+  const { job, payload } = github.context;
   core.debug(`payload.after: ${payload.after}`);
   core.debug(`payload.after: ${payload.pull_request}`);
   const gitCommitSha = payload.after || payload?.pull_request?.head?.sha;
@@ -117,7 +117,7 @@ ${formatImage({
     ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
     : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
-  if (teardown && action === 'closed') {
+  if (teardown && payload.action === 'closed') {
     try {
       core.info(`Teardown: ${url}`);
       core.setSecret(surgeToken);
