@@ -9,6 +9,12 @@ on: # rebuild any PRs and main branch changes
       - 'releases/*'
       - test
       - v1
+env:
+  GEN_GITHUB_ACTOR: ${{ env.GITHUB_ACTOR }}
+  GEN_GITHUB_RUN_NUMBER: ${{ env.GITHUB_RUN_NUMBER }}
+  GEN_GITHUB_ACTION: ${{ env.GITHUB_ACTION }}
+  GEN_GITHUB_REF: ${{ env.GITHUB_REF }}
+  GEN_GITHUB_SHA: ${{ env.GITHUB_SHA }}
 
 jobs:
   preview: # make sure the action works on a clean machine without building
@@ -21,11 +27,12 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          build: |
-            npm install
-            npm run build
-          dist: public
           teardown: 'true'
+          dist: public/preview
+          build: |
+            mkdir -p public/preview
+            npm install
+            npm run build-preview -- public/preview
       - name: Get the output url
         run: echo "url => ${{ steps.preview.outputs.preview_url }}"
   preview2:
@@ -38,10 +45,11 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          build: |
-            npm install
-            npm run build
-          dist: public
           teardown: 'true'
+          dist: public/preview2
+          build: |
+            mkdir -p public/preview2
+            npm install
+            npm run build-preview -- public/preview2
       - name: Get the output url
         run: echo "url => ${{ steps.preview2.outputs.preview_url }}"
