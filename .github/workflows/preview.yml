@@ -16,6 +16,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        id: preview
         name: test afc163/surge-preview
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
@@ -25,11 +26,14 @@ jobs:
             npm run build
           dist: public
           teardown: 'true'
+      - name: Get the output url
+        run: echo "url => ${{ steps.preview.outputs.preview_url }}"
   preview2:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: ./
+        id: preview2
         name: test afc163/surge-preview
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
@@ -39,3 +43,5 @@ jobs:
             npm run build
           dist: public
           teardown: 'true'
+      - name: Get the output url
+        run: echo "url => ${{ steps.preview2.outputs.preview_url }}"
