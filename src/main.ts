@@ -185,7 +185,7 @@ ${formatImage({
 ${formatImage({
   buildingLogUrl,
   imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"',
+    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
 })}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
