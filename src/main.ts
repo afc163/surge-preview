@@ -12,7 +12,8 @@ async function main() {
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
-  const teardown = core.getInput('teardown')?.toLowerCase() === 'true';
+  const teardown =
+    core.getInput('teardown')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -117,6 +118,9 @@ ${formatImage({
     ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
     : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
+  core.debug(`teardown enabled?: ${teardown}`);
+  core.debug(`event action?: ${payload.action}`);
+
   if (teardown && payload.action === 'closed') {
     try {
       core.info(`Teardown: ${url}`);
@@ -182,7 +186,7 @@ ${formatImage({
 ${formatImage({
   buildingLogUrl,
   imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png"',
+    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
 })}
 
 <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
