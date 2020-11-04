@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
-import { execSurgeCommand, formatImage } from './helpers';
+import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -81,7 +81,7 @@ ${formatImage({
     'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
 })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${getCommentFooter()}
     `);
     if (failOnError) {
       core.setFailed(err.message);
@@ -130,15 +130,15 @@ ${formatImage({
       });
 
       return commentIfNotForkedRepo(`
-      :recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
+:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
 
-      ${formatImage({
-        buildingLogUrl,
-        imageUrl:
-          'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
-      })}
+${formatImage({
+  buildingLogUrl,
+  imageUrl:
+    'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
+})}
         
-      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${getCommentFooter()}
       `);
     } catch (err) {
       return fail?.(err);
@@ -154,7 +154,7 @@ ${formatImage({
     'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
 })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${getCommentFooter()}
   `);
 
   const startTime = Date.now();
@@ -189,7 +189,7 @@ ${formatImage({
     'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
 })}
 
-<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+${getCommentFooter()}
     `);
   } catch (err) {
     fail?.(err);

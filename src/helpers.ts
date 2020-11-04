@@ -30,3 +30,7 @@ export const formatImage = ({
 }) => {
   return `<a href="${buildingLogUrl}"><img width="300" src="${imageUrl}"></a>`;
 };
+
+export const getCommentFooter = () => {
+  return '<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>';
+};
