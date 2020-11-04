@@ -21,7 +21,6 @@ export const execSurgeCommand = async ({
   }
 };
 
-// fr
 export const formatImage = ({
   buildingLogUrl,
   imageUrl,
