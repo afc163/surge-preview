@@ -1,0 +1,41 @@
+name: 'preview'
+on: # rebuild any PRs and main branch changes
+  pull_request_target:
+    # use default types + closed event type
+    types: [opened, synchronize, reopened, closed]
+  push:
+    branches:
+      - main
+      - 'releases/*'
+      - test
+      - v1
+
+jobs:
+  preview: # make sure the action works on a clean machine without building
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        name: test afc163/surge-preview
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: |
+            npm install
+            npm run build
+          dist: public
+          teardown: 'true'
+  preview2:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: ./
+        name: test afc163/surge-preview
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          build: |
+            npm install
+            npm run build
+          dist: public
+          teardown: 'true'
