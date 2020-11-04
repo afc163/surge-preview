@@ -1,6 +1,8 @@
 name: 'build-test'
 on: # rebuild any PRs and main branch changes
   pull_request_target:
+    # use default types + closed event type
+    types: [opened, synchronize, reopened, closed]
   push:
     branches:
       - main
@@ -30,6 +32,7 @@ jobs:
             npm install
             npm run build
           dist: public
+          teardown: 'true'
   preview2:
     runs-on: ubuntu-latest
     steps:
@@ -43,3 +46,4 @@ jobs:
             npm install
             npm run build
           dist: public
+          teardown: 'true'

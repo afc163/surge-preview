@@ -20,6 +20,10 @@ inputs:
     required: false
   failOnError:
     description: 'Set `failed` if a deployment throws error'
+  teardown:
+    description: 'Determines if the preview instance will be torn down on PR close'
+    default: 'false'
+    required: false
 runs:
   using: node12
   main: 'dist/index.js'

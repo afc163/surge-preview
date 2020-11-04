@@ -29,7 +29,7 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request_target]
+on: [pull_request_target, push]
 
 jobs:
   preview:
@@ -53,7 +53,7 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [push, pull_request_target]
+on: [pull_request_target, push]
 
 jobs:
   preview-job-1:
@@ -87,6 +87,35 @@ The preview website urls will be:
 - `https://{{repository.owner}}-{{repository.name}}-preview-job-1-pr-{{pr.number}}.surge.sh`
 - `https://{{repository.owner}}-{{repository.name}}-preview-job-2-pr-{{pr.number}}.surge.sh`
 
+### Teardown
+
+When a pull request is closed and teardown is set to 'true', then the surge instance will be destroyed.
+
+```yaml
+name: 🔂 Surge PR Preview
+
+on:
+  pull_request_target:
+    # when using teardown: 'true', add default event types + closed event type
+    types: [opened, synchronize, reopened, closed]
+  push:
+
+jobs:
+  preview:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: afc163/surge-preview@v1
+        with:
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
+          teardown: 'true'
+          build: |
+            npm install
+            npm run build
+```
+
 ### Inputs
 
 - `surge_token`: [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).
@@ -94,6 +123,7 @@ The preview website urls will be:
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
 - `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
+- `teardown`: Determines if the preview instance will be torn down on PR close, defaults to `false`.
 
 ### Who are using it?
 
