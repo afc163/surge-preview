@@ -95,6 +95,8 @@ async function main() {
 
       return commentIfNotForkedRepo(`
       :bomb: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed.
+
+      <img width="300" src="https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png">
         
       <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
       `);
