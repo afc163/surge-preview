@@ -126,7 +126,7 @@ ${formatImage({
       });
 
       return commentIfNotForkedRepo(`
-      :bomb: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed.
+      :recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
 
       ${formatImage({
         buildingLogUrl,
