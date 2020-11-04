@@ -16,32 +16,34 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: ./
-        id: preview
+        id: preview_step
         name: test afc163/surge-preview
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          build: |
-            npm install
-            npm run build
-          dist: public
           teardown: 'true'
+          dist: public/preview
+          build: |
+            mkdir -p public/preview
+            npm install
+            npm run build-preview -- public/preview
       - name: Get the output url
-        run: echo "url => ${{ steps.preview.outputs.preview_url }}"
+        run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
   preview2:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: ./
-        id: preview2
+        id: preview_action
         name: test afc163/surge-preview
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          build: |
-            npm install
-            npm run build
-          dist: public
           teardown: 'true'
+          dist: public/preview2
+          build: |
+            mkdir -p public/preview2
+            npm install
+            npm run build-preview -- public/preview2
       - name: Get the output url
-        run: echo "url => ${{ steps.preview2.outputs.preview_url }}"
+        run: echo "url => ${{ steps.preview_action.outputs.preview_url }}"
