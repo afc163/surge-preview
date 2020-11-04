@@ -118,7 +118,7 @@ ${formatImage({
     : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
   core.info(`teardown enabled?: ${teardown}`);
-  core.info(`event action?: ${payload.action}`);
+  core.debug(`event action?: ${payload.action}`);
 
   if (teardown && payload.action === 'closed') {
     try {
