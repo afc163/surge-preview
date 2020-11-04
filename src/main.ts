@@ -130,15 +130,15 @@ ${formatImage({
       });
 
       return commentIfNotForkedRepo(`
-      :recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
+:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
 
-      ${formatImage({
-        buildingLogUrl,
-        imageUrl:
-          'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
-      })}
+${formatImage({
+  buildingLogUrl,
+  imageUrl:
+    'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
+})}
         
-      <sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
+<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>
       `);
     } catch (err) {
       return fail?.(err);
