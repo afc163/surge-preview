@@ -140,6 +140,7 @@ jobs:
 - https://github.com/didi/cube-ui
 - https://github.com/didi/mand-mobile/
 - https://github.com/jdf2e/nutui/
+- https://github.com/ant-design-colorful/ant-design-colorful
 
 ### Thanks to
 
