@@ -37,6 +37,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: afc163/surge-preview@v1
+        id: preview_step
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -44,6 +45,8 @@ jobs:
             npm install
             npm run build
           dist: public
+      - name: Get the preview_url
+        run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
 ```
 
 The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{job.name}}-pr-{{pr.number}}.surge.sh`.
@@ -124,6 +127,10 @@ jobs:
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
 - `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
 - `teardown`: Determines if the preview instance will be torn down on PR close, defaults to `false`.
+
+### Outputs
+
+- `preview_url`: The url for the related PR preview
 
 ### Who are using it?
 
