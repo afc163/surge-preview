@@ -6,7 +6,6 @@
   "main": "lib/main.js",
   "scripts": {
     "build": "tsc",
-    "build-preview": "node ./utils/gen-preview.js",
     "format": "prettier --write **/*.ts",
     "format-check": "prettier --check **/*.ts",
     "lint": "eslint src/**/*.ts",
