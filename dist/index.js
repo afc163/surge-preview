@@ -274,6 +274,7 @@ ${helpers_1.getCommentFooter()}
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+        core.setOutput('preview_url', url);
         let data;
         try {
             const result = yield octokit.checks.listForRef({
