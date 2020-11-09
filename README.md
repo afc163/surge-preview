@@ -41,10 +41,10 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
           build: |
             npm install
             npm run build
-          dist: public
       - name: Get the preview_url
         run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
 ```
@@ -67,10 +67,10 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
           build: |
             npm install
             npm run build
-          dist: public
   preview-job-2:
     runs-on: ubuntu-latest
     steps:
@@ -79,10 +79,10 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          dist: public
           build: |
             npm install
             npm run build
-          dist: public
 ```
 
 The preview website urls will be:
