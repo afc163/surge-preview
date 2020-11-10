@@ -45,11 +45,17 @@ const allowedVars = [
     return writeFile(filePath, 'test content');
   }
 
+  content.push(
+    `$github.context.payload.pull_request.head.ref: ${github.context.payload.pull_request.head.ref}`
+  );
+  content.push(
+    `$github.context.payload.pull_request.head.sha: ${github.context.payload.pull_request.head.sha}`
+  );
+
   console.log(`received: ${content}`);
   const contentHtml = content.join('\n   ');
   const html = `<div>
    ${contentHtml}
-   ${JSON.stringify(github.context, null, 2)}
 </div>`;
 
   return writeFile(filePath, html);
