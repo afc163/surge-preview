@@ -49,7 +49,7 @@ const allowedVars = [
   const contentHtml = content.join('\n   ');
   const html = `<div>
    ${contentHtml}
-   ${github.context.payload.pull_request.sha}
+   ${JSON.stringify(github.context, null, 2)}
 </div>`;
 
   return writeFile(filePath, html);
