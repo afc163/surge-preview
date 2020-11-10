@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const github = require('@actions/github');
 
 const writeFile = (filePath, html) => {
   const fd = path.resolve(__dirname, '..', filePath, 'index.html');
@@ -43,6 +44,13 @@ const allowedVars = [
     console.log(`no content received`);
     return writeFile(filePath, 'test content');
   }
+
+  content.push(
+    `<div><b>github.context.payload.pull_request.head.ref</b>: ${github.context.payload.pull_request.head.ref}</div>`
+  );
+  content.push(
+    `<div><b>github.context.payload.pull_request.head.sha</b>: ${github.context.payload.pull_request.head.sha}</div>`
+  );
 
   console.log(`received: ${content}`);
   const contentHtml = content.join('\n   ');
