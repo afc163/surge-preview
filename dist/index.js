@@ -2,7 +2,7 @@ require('./sourcemap-register.js');module.exports =
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 1364:
+/***/ 4375:
 /***/ (function(__unused_webpack_module, exports) {
 
 "use strict";
@@ -55,7 +55,7 @@ exports.deleteComment = deleteComment;
 
 /***/ }),
 
-/***/ 710:
+/***/ 7191:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -90,8 +90,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.comment = void 0;
-const core = __importStar(__webpack_require__(9498));
-const comment_1 = __webpack_require__(1364);
+const core = __importStar(__webpack_require__(1733));
+const comment_1 = __webpack_require__(4375);
 function comment({ repo, number, message, octokit, header, }) {
     return __awaiter(this, void 0, void 0, function* () {
         if (isNaN(number) || number < 1) {
@@ -119,7 +119,7 @@ exports.comment = comment;
 
 /***/ }),
 
-/***/ 4155:
+/***/ 7001:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -135,7 +135,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
-const exec_1 = __webpack_require__(5708);
+const exec_1 = __webpack_require__(20);
 exports.execSurgeCommand = ({ command, }) => __awaiter(void 0, void 0, void 0, function* () {
     let myOutput = '';
     const options = {
@@ -160,7 +160,7 @@ exports.getCommentFooter = () => {
 
 /***/ }),
 
-/***/ 1858:
+/***/ 6471:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -194,11 +194,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const core = __importStar(__webpack_require__(9498));
-const github = __importStar(__webpack_require__(9889));
-const exec_1 = __webpack_require__(5708);
-const commentToPullRequest_1 = __webpack_require__(710);
-const helpers_1 = __webpack_require__(4155);
+const core = __importStar(__webpack_require__(1733));
+const github = __importStar(__webpack_require__(3866));
+const exec_1 = __webpack_require__(20);
+const commentToPullRequest_1 = __webpack_require__(7191);
+const helpers_1 = __webpack_require__(7001);
 let failOnErrorGlobal = false;
 let fail;
 function main() {
@@ -378,7 +378,7 @@ main().catch((err) => {
 
 /***/ }),
 
-/***/ 9436:
+/***/ 6761:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -392,7 +392,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const os = __importStar(__webpack_require__(2087));
-const utils_1 = __webpack_require__(7379);
+const utils_1 = __webpack_require__(2794);
 /**
  * Commands
  *
@@ -464,7 +464,7 @@ function escapeProperty(s) {
 
 /***/ }),
 
-/***/ 9498:
+/***/ 1733:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -486,9 +486,9 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const command_1 = __webpack_require__(9436);
-const file_command_1 = __webpack_require__(8499);
-const utils_1 = __webpack_require__(7379);
+const command_1 = __webpack_require__(6761);
+const file_command_1 = __webpack_require__(5423);
+const utils_1 = __webpack_require__(2794);
 const os = __importStar(__webpack_require__(2087));
 const path = __importStar(__webpack_require__(5622));
 /**
@@ -709,7 +709,7 @@ exports.getState = getState;
 
 /***/ }),
 
-/***/ 8499:
+/***/ 5423:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -727,7 +727,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 const fs = __importStar(__webpack_require__(5747));
 const os = __importStar(__webpack_require__(2087));
-const utils_1 = __webpack_require__(7379);
+const utils_1 = __webpack_require__(2794);
 function issueCommand(command, message) {
     const filePath = process.env[`GITHUB_${command}`];
     if (!filePath) {
@@ -745,7 +745,7 @@ exports.issueCommand = issueCommand;
 
 /***/ }),
 
-/***/ 7379:
+/***/ 2794:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -771,7 +771,7 @@ exports.toCommandValue = toCommandValue;
 
 /***/ }),
 
-/***/ 5708:
+/***/ 20:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -793,7 +793,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     return result;
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const tr = __importStar(__webpack_require__(3376));
+const tr = __importStar(__webpack_require__(9985));
 /**
  * Exec a command.
  * Output will be streamed to the live console.
@@ -822,7 +822,7 @@ exports.exec = exec;
 
 /***/ }),
 
-/***/ 3376:
+/***/ 9985:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -848,8 +848,8 @@ const os = __importStar(__webpack_require__(2087));
 const events = __importStar(__webpack_require__(8614));
 const child = __importStar(__webpack_require__(3129));
 const path = __importStar(__webpack_require__(5622));
-const io = __importStar(__webpack_require__(4505));
-const ioUtil = __importStar(__webpack_require__(2647));
+const io = __importStar(__webpack_require__(9758));
+const ioUtil = __importStar(__webpack_require__(8775));
 /* eslint-disable @typescript-eslint/unbound-method */
 const IS_WINDOWS = process.platform === 'win32';
 /*
@@ -1429,7 +1429,7 @@ class ExecState extends events.EventEmitter {
 
 /***/ }),
 
-/***/ 7704:
+/***/ 4899:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -1486,7 +1486,7 @@ exports.Context = Context;
 
 /***/ }),
 
-/***/ 9889:
+/***/ 3866:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1512,8 +1512,8 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokit = exports.context = void 0;
-const Context = __importStar(__webpack_require__(7704));
-const utils_1 = __webpack_require__(2851);
+const Context = __importStar(__webpack_require__(4899));
+const utils_1 = __webpack_require__(7813);
 exports.context = new Context.Context();
 /**
  * Returns a hydrated octokit ready to use for GitHub Actions
@@ -1529,7 +1529,7 @@ exports.getOctokit = getOctokit;
 
 /***/ }),
 
-/***/ 3336:
+/***/ 9216:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1555,7 +1555,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getApiBaseUrl = exports.getProxyAgent = exports.getAuthString = void 0;
-const httpClient = __importStar(__webpack_require__(5402));
+const httpClient = __importStar(__webpack_require__(1247));
 function getAuthString(token, options) {
     if (!token && !options.auth) {
         throw new Error('Parameter token or opts.auth is required');
@@ -1579,7 +1579,7 @@ exports.getApiBaseUrl = getApiBaseUrl;
 
 /***/ }),
 
-/***/ 2851:
+/***/ 7813:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -1605,12 +1605,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getOctokitOptions = exports.GitHub = exports.context = void 0;
-const Context = __importStar(__webpack_require__(7704));
-const Utils = __importStar(__webpack_require__(3336));
+const Context = __importStar(__webpack_require__(4899));
+const Utils = __importStar(__webpack_require__(9216));
 // octokit + plugins
-const core_1 = __webpack_require__(4011);
-const plugin_rest_endpoint_methods_1 = __webpack_require__(9457);
-const plugin_paginate_rest_1 = __webpack_require__(2757);
+const core_1 = __webpack_require__(1058);
+const plugin_rest_endpoint_methods_1 = __webpack_require__(2247);
+const plugin_paginate_rest_1 = __webpack_require__(7173);
 exports.context = new Context.Context();
 const baseUrl = Utils.getApiBaseUrl();
 const defaults = {
@@ -1640,16 +1640,15 @@ exports.getOctokitOptions = getOctokitOptions;
 
 /***/ }),
 
-/***/ 5402:
+/***/ 1247:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const url = __webpack_require__(8835);
 const http = __webpack_require__(8605);
 const https = __webpack_require__(7211);
-const pm = __webpack_require__(4357);
+const pm = __webpack_require__(5916);
 let tunnel;
 var HttpCodes;
 (function (HttpCodes) {
@@ -1695,7 +1694,7 @@ var MediaTypes;
  * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
  */
 function getProxyUrl(serverUrl) {
-    let proxyUrl = pm.getProxyUrl(url.parse(serverUrl));
+    let proxyUrl = pm.getProxyUrl(new URL(serverUrl));
     return proxyUrl ? proxyUrl.href : '';
 }
 exports.getProxyUrl = getProxyUrl;
@@ -1714,6 +1713,15 @@ const HttpResponseRetryCodes = [
 const RetryableHttpVerbs = ['OPTIONS', 'GET', 'DELETE', 'HEAD'];
 const ExponentialBackoffCeiling = 10;
 const ExponentialBackoffTimeSlice = 5;
+class HttpClientError extends Error {
+    constructor(message, statusCode) {
+        super(message);
+        this.name = 'HttpClientError';
+        this.statusCode = statusCode;
+        Object.setPrototypeOf(this, HttpClientError.prototype);
+    }
+}
+exports.HttpClientError = HttpClientError;
 class HttpClientResponse {
     constructor(message) {
         this.message = message;
@@ -1732,7 +1740,7 @@ class HttpClientResponse {
 }
 exports.HttpClientResponse = HttpClientResponse;
 function isHttps(requestUrl) {
-    let parsedUrl = url.parse(requestUrl);
+    let parsedUrl = new URL(requestUrl);
     return parsedUrl.protocol === 'https:';
 }
 exports.isHttps = isHttps;
@@ -1837,7 +1845,7 @@ class HttpClient {
         if (this._disposed) {
             throw new Error('Client has already been disposed.');
         }
-        let parsedUrl = url.parse(requestUrl);
+        let parsedUrl = new URL(requestUrl);
         let info = this._prepareRequest(verb, parsedUrl, headers);
         // Only perform retries on reads since writes may not be idempotent.
         let maxTries = this._allowRetries && RetryableHttpVerbs.indexOf(verb) != -1
@@ -1876,7 +1884,7 @@ class HttpClient {
                     // if there's no location to redirect to, we won't
                     break;
                 }
-                let parsedRedirectUrl = url.parse(redirectUrl);
+                let parsedRedirectUrl = new URL(redirectUrl);
                 if (parsedUrl.protocol == 'https:' &&
                     parsedUrl.protocol != parsedRedirectUrl.protocol &&
                     !this._allowRedirectDowngrade) {
@@ -1992,7 +2000,7 @@ class HttpClient {
      * @param serverUrl  The server URL where the request will be sent. For example, https://api.github.com
      */
     getAgent(serverUrl) {
-        let parsedUrl = url.parse(serverUrl);
+        let parsedUrl = new URL(serverUrl);
         return this._getAgent(parsedUrl);
     }
     _prepareRequest(method, requestUrl, headers) {
@@ -2059,13 +2067,13 @@ class HttpClient {
         if (useProxy) {
             // If using proxy, need tunnel
             if (!tunnel) {
-                tunnel = __webpack_require__(1234);
+                tunnel = __webpack_require__(4288);
             }
             const agentOptions = {
                 maxSockets: maxSockets,
                 keepAlive: this._keepAlive,
                 proxy: {
-                    proxyAuth: proxyUrl.auth,
+                    proxyAuth: `${proxyUrl.username}:${proxyUrl.password}`,
                     host: proxyUrl.hostname,
                     port: proxyUrl.port
                 }
@@ -2160,12 +2168,8 @@ class HttpClient {
                 else {
                     msg = 'Failed request: (' + statusCode + ')';
                 }
-                let err = new Error(msg);
-                // attach statusCode and body obj (if available) to the error object
-                err['statusCode'] = statusCode;
-                if (response.result) {
-                    err['result'] = response.result;
-                }
+                let err = new HttpClientError(msg, statusCode);
+                err.result = response.result;
                 reject(err);
             }
             else {
@@ -2179,13 +2183,12 @@ exports.HttpClient = HttpClient;
 
 /***/ }),
 
-/***/ 4357:
-/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
+/***/ 5916:
+/***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-const url = __webpack_require__(8835);
 function getProxyUrl(reqUrl) {
     let usingSsl = reqUrl.protocol === 'https:';
     let proxyUrl;
@@ -2200,7 +2203,7 @@ function getProxyUrl(reqUrl) {
         proxyVar = process.env['http_proxy'] || process.env['HTTP_PROXY'];
     }
     if (proxyVar) {
-        proxyUrl = url.parse(proxyVar);
+        proxyUrl = new URL(proxyVar);
     }
     return proxyUrl;
 }
@@ -2245,7 +2248,7 @@ exports.checkBypass = checkBypass;
 
 /***/ }),
 
-/***/ 2647:
+/***/ 8775:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2447,7 +2450,7 @@ function isUnixExecutable(stats) {
 
 /***/ }),
 
-/***/ 4505:
+/***/ 9758:
 /***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
@@ -2465,7 +2468,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const childProcess = __webpack_require__(3129);
 const path = __webpack_require__(5622);
 const util_1 = __webpack_require__(1669);
-const ioUtil = __webpack_require__(2647);
+const ioUtil = __webpack_require__(8775);
 const exec = util_1.promisify(childProcess.exec);
 /**
  * Copies a file or folder.
@@ -2744,7 +2747,7 @@ function copyFile(srcFile, destFile, force) {
 
 /***/ }),
 
-/***/ 6718:
+/***/ 4121:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -2801,7 +2804,7 @@ exports.createTokenAuth = createTokenAuth;
 
 /***/ }),
 
-/***/ 4011:
+/***/ 1058:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -2809,62 +2812,49 @@ exports.createTokenAuth = createTokenAuth;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-var universalUserAgent = __webpack_require__(8497);
-var beforeAfterHook = __webpack_require__(2528);
-var request = __webpack_require__(969);
-var graphql = __webpack_require__(4031);
-var authToken = __webpack_require__(6718);
+var universalUserAgent = __webpack_require__(6116);
+var beforeAfterHook = __webpack_require__(4692);
+var request = __webpack_require__(9133);
+var graphql = __webpack_require__(3519);
+var authToken = __webpack_require__(4121);
 
-function _defineProperty(obj, key, value) {
-  if (key in obj) {
-    Object.defineProperty(obj, key, {
-      value: value,
-      enumerable: true,
-      configurable: true,
-      writable: true
-    });
-  } else {
-    obj[key] = value;
+function _objectWithoutPropertiesLoose(source, excluded) {
+  if (source == null) return {};
+  var target = {};
+  var sourceKeys = Object.keys(source);
+  var key, i;
+
+  for (i = 0; i < sourceKeys.length; i++) {
+    key = sourceKeys[i];
+    if (excluded.indexOf(key) >= 0) continue;
+    target[key] = source[key];
   }
 
-  return obj;
+  return target;
 }
 
-function ownKeys(object, enumerableOnly) {
-  var keys = Object.keys(object);
+function _objectWithoutProperties(source, excluded) {
+  if (source == null) return {};
+
+  var target = _objectWithoutPropertiesLoose(source, excluded);
+
+  var key, i;
 
   if (Object.getOwnPropertySymbols) {
-    var symbols = Object.getOwnPropertySymbols(object);
-    if (enumerableOnly) symbols = symbols.filter(function (sym) {
-      return Object.getOwnPropertyDescriptor(object, sym).enumerable;
-    });
-    keys.push.apply(keys, symbols);
-  }
+    var sourceSymbolKeys = Object.getOwnPropertySymbols(source);
 
-  return keys;
-}
-
-function _objectSpread2(target) {
-  for (var i = 1; i < arguments.length; i++) {
-    var source = arguments[i] != null ? arguments[i] : {};
-
-    if (i % 2) {
-      ownKeys(Object(source), true).forEach(function (key) {
-        _defineProperty(target, key, source[key]);
-      });
-    } else if (Object.getOwnPropertyDescriptors) {
-      Object.defineProperties(target, Object.getOwnPropertyDescriptors(source));
-    } else {
-      ownKeys(Object(source)).forEach(function (key) {
-        Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key));
-      });
+    for (i = 0; i < sourceSymbolKeys.length; i++) {
+      key = sourceSymbolKeys[i];
+      if (excluded.indexOf(key) >= 0) continue;
+      if (!Object.prototype.propertyIsEnumerable.call(source, key)) continue;
+      target[key] = source[key];
     }
   }
 
   return target;
 }
 
-const VERSION = "3.1.2";
+const VERSION = "3.2.1";
 
 class Octokit {
   constructor(options = {}) {
@@ -2896,9 +2886,7 @@ class Octokit {
     }
 
     this.request = request.request.defaults(requestDefaults);
-    this.graphql = graphql.withCustomRequest(this.request).defaults(_objectSpread2(_objectSpread2({}, requestDefaults), {}, {
-      baseUrl: requestDefaults.baseUrl.replace(/\/api\/v3$/, "/api")
-    }));
+    this.graphql = graphql.withCustomRequest(this.request).defaults(requestDefaults);
     this.log = Object.assign({
       debug: () => {},
       info: () => {},
@@ -2906,7 +2894,7 @@ class Octokit {
       error: console.error.bind(console)
     }, options.log);
     this.hook = hook; // (1) If neither `options.authStrategy` nor `options.auth` are set, the `octokit` instance
-    //     is unauthenticated. The `this.auth()` method is a no-op and no request hook is registred.
+    //     is unauthenticated. The `this.auth()` method is a no-op and no request hook is registered.
     // (2) If only `options.auth` is set, use the default token authentication strategy.
     // (3) If `options.authStrategy` is set then use it and pass in `options.auth`. Always pass own request as many strategies accept a custom request instance.
     // TODO: type `options.auth` based on `options.authStrategy`.
@@ -2925,8 +2913,21 @@ class Octokit {
         this.auth = auth;
       }
     } else {
-      const auth = options.authStrategy(Object.assign({
-        request: this.request
+      const {
+        authStrategy
+      } = options,
+            otherOptions = _objectWithoutProperties(options, ["authStrategy"]);
+
+      const auth = authStrategy(Object.assign({
+        request: this.request,
+        log: this.log,
+        // we pass the current octokit instance as well as its constructor options
+        // to allow for authentication strategies that return a new octokit instance
+        // that shares the same internal state as the current one. The original
+        // requirement for this was the "event-octokit" authentication strategy
+        // of https://github.com/probot/octokit-auth-probot.
+        octokit: this,
+        octokitOptions: otherOptions
       }, options.auth)); // @ts-ignore  ¯\_(ツ)_/¯
 
       hook.wrap("request", auth.hook);
@@ -2985,7 +2986,7 @@ exports.Octokit = Octokit;
 
 /***/ }),
 
-/***/ 9963:
+/***/ 5954:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -2993,8 +2994,8 @@ exports.Octokit = Octokit;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-var isPlainObject = __webpack_require__(8071);
-var universalUserAgent = __webpack_require__(8497);
+var isPlainObject = __webpack_require__(1915);
+var universalUserAgent = __webpack_require__(6116);
 
 function lowercaseKeys(object) {
   if (!object) {
@@ -3357,7 +3358,7 @@ function withDefaults(oldDefaults, newDefaults) {
   });
 }
 
-const VERSION = "6.0.8";
+const VERSION = "6.0.9";
 
 const userAgent = `octokit-endpoint.js/${VERSION} ${universalUserAgent.getUserAgent()}`; // DEFAULTS has all properties set that EndpointOptions has, except url.
 // So we use RequestParameters and add method as additional required property.
@@ -3383,7 +3384,7 @@ exports.endpoint = endpoint;
 
 /***/ }),
 
-/***/ 4031:
+/***/ 3519:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -3391,10 +3392,10 @@ exports.endpoint = endpoint;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-var request = __webpack_require__(969);
-var universalUserAgent = __webpack_require__(8497);
+var request = __webpack_require__(9133);
+var universalUserAgent = __webpack_require__(6116);
 
-const VERSION = "4.5.6";
+const VERSION = "4.5.7";
 
 class GraphqlError extends Error {
   constructor(request, response) {
@@ -3499,7 +3500,7 @@ exports.withCustomRequest = withCustomRequest;
 
 /***/ }),
 
-/***/ 2757:
+/***/ 7173:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -3507,7 +3508,7 @@ exports.withCustomRequest = withCustomRequest;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 
-const VERSION = "2.4.0";
+const VERSION = "2.6.0";
 
 /**
  * Some “list” response that can be paginated have a different response structure
@@ -3560,26 +3561,23 @@ function iterator(octokit, route, parameters) {
   let url = options.url;
   return {
     [Symbol.asyncIterator]: () => ({
-      next() {
-        if (!url) {
-          return Promise.resolve({
-            done: true
-          });
-        }
-
-        return requestMethod({
+      async next() {
+        if (!url) return {
+          done: true
+        };
+        const response = await requestMethod({
           method,
           url,
           headers
-        }).then(normalizePaginatedListResponse).then(response => {
-          // `response.headers.link` format:
-          // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
-          // sets `url` to undefined if "next" URL is not present or `link` header is not set
-          url = ((response.headers.link || "").match(/<([^>]+)>;\s*rel="next"/) || [])[1];
-          return {
-            value: response
-          };
         });
+        const normalizedResponse = normalizePaginatedListResponse(response); // `response.headers.link` format:
+        // '<https://api.github.com/users/aseemk/followers?page=2>; rel="next", <https://api.github.com/users/aseemk/followers?page=2>; rel="last"'
+        // sets `url` to undefined if "next" URL is not present or `link` header is not set
+
+        url = ((normalizedResponse.headers.link || "").match(/<([^>]+)>;\s*rel="next"/) || [])[1];
+        return {
+          value: normalizedResponse
+        };
       }
 
     })
@@ -3617,6 +3615,10 @@ function gather(octokit, results, iterator, mapFn) {
   });
 }
 
+const composePaginateRest = Object.assign(paginate, {
+  iterator
+});
+
 /**
  * @param octokit Octokit instance
  * @param options Options passed to Octokit constructor
@@ -3631,13 +3633,14 @@ function paginateRest(octokit) {
 }
 paginateRest.VERSION = VERSION;
 
+exports.composePaginateRest = composePaginateRest;
 exports.paginateRest = paginateRest;
 //# sourceMappingURL=index.js.map
 
 
 /***/ }),
 
-/***/ 9457:
+/***/ 2247:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -4694,7 +4697,7 @@ const Endpoints = {
   }
 };
 
-const VERSION = "4.2.0";
+const VERSION = "4.2.1";
 
 function endpointsToMethods(octokit, endpointsMap) {
   const newMethods = {};
@@ -4799,7 +4802,7 @@ exports.restEndpointMethods = restEndpointMethods;
 
 /***/ }),
 
-/***/ 8602:
+/***/ 9749:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -4809,8 +4812,8 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var deprecation = __webpack_require__(3642);
-var once = _interopDefault(__webpack_require__(4762));
+var deprecation = __webpack_require__(4763);
+var once = _interopDefault(__webpack_require__(4259));
 
 const logOnce = once(deprecation => console.warn(deprecation));
 /**
@@ -4862,7 +4865,7 @@ exports.RequestError = RequestError;
 
 /***/ }),
 
-/***/ 969:
+/***/ 9133:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -4872,13 +4875,13 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 
 function _interopDefault (ex) { return (ex && (typeof ex === 'object') && 'default' in ex) ? ex['default'] : ex; }
 
-var endpoint = __webpack_require__(9963);
-var universalUserAgent = __webpack_require__(8497);
-var isPlainObject = __webpack_require__(8071);
-var nodeFetch = _interopDefault(__webpack_require__(5875));
-var requestError = __webpack_require__(8602);
+var endpoint = __webpack_require__(5954);
+var universalUserAgent = __webpack_require__(6116);
+var isPlainObject = __webpack_require__(1915);
+var nodeFetch = _interopDefault(__webpack_require__(7930));
+var requestError = __webpack_require__(9749);
 
-const VERSION = "5.4.9";
+const VERSION = "5.4.10";
 
 function getBufferResponse(response) {
   return response.arrayBuffer();
@@ -5018,12 +5021,12 @@ exports.request = request;
 
 /***/ }),
 
-/***/ 2528:
+/***/ 4692:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var register = __webpack_require__(6938)
-var addHook = __webpack_require__(903)
-var removeHook = __webpack_require__(6596)
+var register = __webpack_require__(6766)
+var addHook = __webpack_require__(2262)
+var removeHook = __webpack_require__(4571)
 
 // bind with array of arguments: https://stackoverflow.com/a/21792913
 var bind = Function.bind
@@ -5082,7 +5085,7 @@ module.exports.Collection = Hook.Collection
 
 /***/ }),
 
-/***/ 903:
+/***/ 2262:
 /***/ ((module) => {
 
 module.exports = addHook
@@ -5135,7 +5138,7 @@ function addHook (state, kind, name, hook) {
 
 /***/ }),
 
-/***/ 6938:
+/***/ 6766:
 /***/ ((module) => {
 
 module.exports = register
@@ -5170,7 +5173,7 @@ function register (state, name, method, options) {
 
 /***/ }),
 
-/***/ 6596:
+/***/ 4571:
 /***/ ((module) => {
 
 module.exports = removeHook
@@ -5194,7 +5197,7 @@ function removeHook (state, name, method) {
 
 /***/ }),
 
-/***/ 3642:
+/***/ 4763:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -5222,7 +5225,7 @@ exports.Deprecation = Deprecation;
 
 /***/ }),
 
-/***/ 8071:
+/***/ 1915:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -5268,7 +5271,7 @@ exports.isPlainObject = isPlainObject;
 
 /***/ }),
 
-/***/ 5875:
+/***/ 7930:
 /***/ ((module, exports, __webpack_require__) => {
 
 "use strict";
@@ -5433,7 +5436,7 @@ FetchError.prototype.name = 'FetchError';
 
 let convert;
 try {
-	convert = __webpack_require__(6876).convert;
+	convert = __webpack_require__(3956).convert;
 } catch (e) {}
 
 const INTERNALS = Symbol('Body internals');
@@ -6925,10 +6928,10 @@ exports.FetchError = FetchError;
 
 /***/ }),
 
-/***/ 4762:
+/***/ 4259:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-var wrappy = __webpack_require__(164)
+var wrappy = __webpack_require__(3654)
 module.exports = wrappy(once)
 module.exports.strict = wrappy(onceStrict)
 
@@ -6974,15 +6977,15 @@ function onceStrict (fn) {
 
 /***/ }),
 
-/***/ 1234:
+/***/ 4288:
 /***/ ((module, __unused_webpack_exports, __webpack_require__) => {
 
-module.exports = __webpack_require__(6795);
+module.exports = __webpack_require__(6217);
 
 
 /***/ }),
 
-/***/ 6795:
+/***/ 6217:
 /***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
@@ -7254,7 +7257,7 @@ exports.debug = debug; // for test
 
 /***/ }),
 
-/***/ 8497:
+/***/ 6116:
 /***/ ((__unused_webpack_module, exports) => {
 
 "use strict";
@@ -7280,7 +7283,7 @@ exports.getUserAgent = getUserAgent;
 
 /***/ }),
 
-/***/ 164:
+/***/ 3654:
 /***/ ((module) => {
 
 // Returns a wrapper function that returns a wrapped callback
@@ -7320,7 +7323,7 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
-/***/ 6876:
+/***/ 3956:
 /***/ ((module) => {
 
 module.exports = eval("require")("encoding");
@@ -7332,7 +7335,7 @@ module.exports = eval("require")("encoding");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("assert");
+module.exports = require("assert");;
 
 /***/ }),
 
@@ -7340,7 +7343,7 @@ module.exports = require("assert");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("child_process");
+module.exports = require("child_process");;
 
 /***/ }),
 
@@ -7348,7 +7351,7 @@ module.exports = require("child_process");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("events");
+module.exports = require("events");;
 
 /***/ }),
 
@@ -7356,7 +7359,7 @@ module.exports = require("events");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("fs");
+module.exports = require("fs");;
 
 /***/ }),
 
@@ -7364,7 +7367,7 @@ module.exports = require("fs");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("http");
+module.exports = require("http");;
 
 /***/ }),
 
@@ -7372,7 +7375,7 @@ module.exports = require("http");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("https");
+module.exports = require("https");;
 
 /***/ }),
 
@@ -7380,7 +7383,7 @@ module.exports = require("https");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("net");
+module.exports = require("net");;
 
 /***/ }),
 
@@ -7388,7 +7391,7 @@ module.exports = require("net");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("os");
+module.exports = require("os");;
 
 /***/ }),
 
@@ -7396,7 +7399,7 @@ module.exports = require("os");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("path");
+module.exports = require("path");;
 
 /***/ }),
 
@@ -7404,7 +7407,7 @@ module.exports = require("path");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("stream");
+module.exports = require("stream");;
 
 /***/ }),
 
@@ -7412,7 +7415,7 @@ module.exports = require("stream");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("tls");
+module.exports = require("tls");;
 
 /***/ }),
 
@@ -7420,7 +7423,7 @@ module.exports = require("tls");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("url");
+module.exports = require("url");;
 
 /***/ }),
 
@@ -7428,7 +7431,7 @@ module.exports = require("url");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("util");
+module.exports = require("util");;
 
 /***/ }),
 
@@ -7436,7 +7439,7 @@ module.exports = require("util");
 /***/ ((module) => {
 
 "use strict";
-module.exports = require("zlib");
+module.exports = require("zlib");;
 
 /***/ })
 
@@ -7478,7 +7481,7 @@ module.exports = require("zlib");
 /******/ 	// module exports must be returned from runtime so entry inlining is disabled
 /******/ 	// startup
 /******/ 	// Load entry module and return exports
-/******/ 	return __webpack_require__(1858);
+/******/ 	return __webpack_require__(6471);
 /******/ })()
 ;
 //# sourceMappingURL=index.js.map
