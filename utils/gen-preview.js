@@ -1,5 +1,6 @@
 const fs = require('fs');
 const path = require('path');
+const github = require('@actions/github');
 
 const writeFile = (filePath, html) => {
   const fd = path.resolve(__dirname, '..', filePath, 'index.html');
@@ -48,6 +49,7 @@ const allowedVars = [
   const contentHtml = content.join('\n   ');
   const html = `<div>
    ${contentHtml}
+   ${github.context.payload.pull_request.sha}
 </div>`;
 
   return writeFile(filePath, html);
