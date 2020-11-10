@@ -46,10 +46,10 @@ const allowedVars = [
   }
 
   content.push(
-    `$github.context.payload.pull_request.head.ref: ${github.context.payload.pull_request.head.ref}`
+    `<div><b>github.context.payload.pull_request.head.ref</b>: ${github.context.payload.pull_request.head.ref}</div>`
   );
   content.push(
-    `$github.context.payload.pull_request.head.sha: ${github.context.payload.pull_request.head.sha}`
+    `<div><b>github.context.payload.pull_request.head.sha</b>: ${github.context.payload.pull_request.head.sha}</div>`
   );
 
   console.log(`received: ${content}`);
