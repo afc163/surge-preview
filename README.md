@@ -29,13 +29,15 @@ Add a workflow (`.github/workflows/preview.yml`):
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [pull_request_target, push]
+on: pull_request_target
 
 jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
       - uses: afc163/surge-preview@v1
         id: preview_step
         with:
@@ -56,13 +58,15 @@ The preview website url will be `https://{{repository.owner}}-{{repository.name}
 ```yaml
 name: 🔂 Surge PR Preview
 
-on: [pull_request_target, push]
+on: pull_request_target
 
 jobs:
   preview-job-1:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
       - uses: afc163/surge-preview@v1
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
@@ -75,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
       - uses: afc163/surge-preview@v1
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
