@@ -144,16 +144,18 @@ jobs:
 - https://github.com/ant-design/pro-components
 - https://github.com/antvis/antvis.github.io
 - https://github.com/antvis/gatsby-theme-antv
+- https://github.com/antvis/g2
+- https://github.com/antvis/g2plot
 - https://github.com/antvis/g6
 - https://github.com/antvis/x6
-- https://github.com/antvis/g2plot
 - https://github.com/umijs/dumi
 - https://github.com/alibaba/hooks
 - https://github.com/youzan/vant
 - https://github.com/didi/cube-ui
-- https://github.com/didi/mand-mobile/
-- https://github.com/jdf2e/nutui/
+- https://github.com/didi/mand-mobile
+- https://github.com/jdf2e/nutui
 - https://github.com/ant-design-colorful/ant-design-colorful
+- https://github.com/iambumblehead/react-dropdown-now
 
 ### Thanks to
 
