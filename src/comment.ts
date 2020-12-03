@@ -15,7 +15,7 @@ export async function findPreviousComment(
     issue_number,
   });
   const h = headerComment(header);
-  return comments.find((comment) => comment.body.includes(h));
+  return comments.find((comment) => comment.body?.includes(h));
 }
 
 export async function updateComment(
