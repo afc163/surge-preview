@@ -98,7 +98,7 @@ When a pull request is closed and teardown is set to 'true', then the surge inst
 name: 🔂 Surge PR Preview
 
 on:
-  pull_request_target:
+  pull_request:
     # when using teardown: 'true', add default event types + closed event type
     types: [opened, synchronize, reopened, closed]
   push:
