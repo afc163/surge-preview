@@ -1,6 +1,6 @@
 name: 'preview'
 on: # rebuild any PRs and main branch changes
-  pull_request_target:
+  pull_request:
     # use default types + closed event type
     types: [opened, synchronize, reopened, closed]
 
@@ -9,8 +9,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
       - uses: ./
         id: preview_step
         name: test afc163/surge-preview
@@ -29,8 +27,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          ref: refs/pull/${{ github.event.pull_request.number }}/merge
       - uses: ./
         id: preview_action
         name: test afc163/surge-preview
