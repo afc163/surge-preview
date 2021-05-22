@@ -1,6 +1,5 @@
 # Dependency directory
 node_modules
-# dependencies
 /web-server/server/node_modules
 /web-server/client/node_modules
 /web-server/client/static
