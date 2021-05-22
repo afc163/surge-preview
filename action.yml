@@ -1,4 +1,4 @@
-name: '🔂 Surge PR Preview'
+name: 'Surge Preview For AntV'
 description: 'Preview website in surge.sh for every pull request'
 author: 'afc163'
 inputs:

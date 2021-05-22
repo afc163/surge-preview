@@ -1,5 +1,13 @@
 # Dependency directory
 node_modules
+# dependencies
+/web-server/server/node_modules
+/web-server/client/node_modules
+/web-server/client/static
+/web-server/server/yarn.lock
+/web-server/client/package-lock.json
+/web-server/client/yarn.lock
+/web-server/client/package-lock.json
 
 # Rest pulled from https://github.com/github/gitignore/blob/master/Node.gitignore
 # Logs
