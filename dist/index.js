@@ -239,10 +239,10 @@ function main() {
             prNumber = pr ? pr.number : undefined;
         }
         if (!prNumber) {
-            core.info(`😢 No related PR found, skip it.`);
+            core.info(`Не найден PR, пропускаю.`);
             return;
         }
-        core.info(`Find PR number: ${prNumber}`);
+        core.info(`Найден PR с номером: ${prNumber}`);
         const commentIfNotForkedRepo = (message) => {
             // if it is forked repo, don't comment
             if (fromForkedRepo) {
@@ -261,10 +261,7 @@ function main() {
             core.info('error message:');
             core.info(JSON.stringify(err, null, 2));
             commentIfNotForkedRepo(`
-Ошибка публикации превью для контента из ${gitCommitSha}. [Логи](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}).
-}
-
-${helpers_1.getCommentFooter()}
+Ошибка публикации превью для контента из ${gitCommitSha}. Подробнее [в логах](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}).
     `);
             if (failOnError) {
                 core.setFailed(err.message);
@@ -307,9 +304,7 @@ ${helpers_1.getCommentFooter()}
                     command: ['surge', 'teardown', url, `--token`, surgeToken],
                 });
                 return commentIfNotForkedRepo(`
-[Превью](https://${url}) ${gitCommitSha} удалено, поскольку PR был закрыт.
-        
-${helpers_1.getCommentFooter()}
+[Превью](https://${url}) ${gitCommitSha} удалено, PR уже закрыт.
       `);
             }
             catch (err) {
@@ -317,9 +312,7 @@ ${helpers_1.getCommentFooter()}
             }
         }
         commentIfNotForkedRepo(`
-Идёт публикация превью для контента из ${gitCommitSha}... [Логи](${buildingLogUrl})
-
-${helpers_1.getCommentFooter()}
+Идёт публикация превью для контента из ${gitCommitSha}… Подробнее [в логах](${buildingLogUrl}).
   `);
         const startTime = Date.now();
         try {
@@ -342,11 +335,9 @@ ${helpers_1.getCommentFooter()}
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
             commentIfNotForkedRepo(`
-Превью контента из ${gitCommitSha} опубликовано и доступно по [ссылке](https://${url})
+[Превью контента](https://${url}) из ${gitCommitSha} опубликовано.
 
 Время сборки: **${duration} с**
-
-${helpers_1.getCommentFooter()}
     `);
         }
         catch (err) {
