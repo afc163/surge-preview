@@ -50,10 +50,10 @@ async function main() {
     prNumber = pr ? pr.number : undefined;
   }
   if (!prNumber) {
-    core.info(`😢 No related PR found, skip it.`);
+    core.info(`Не найден PR, пропускаю.`);
     return;
   }
-  core.info(`Find PR number: ${prNumber}`);
+  core.info(`Найден PR с номером: ${prNumber}`);
 
   const commentIfNotForkedRepo = (message: string) => {
     // if it is forked repo, don't comment
