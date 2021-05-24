@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
-import { execSurgeCommand, getCommentFooter } from './helpers';
+import { execSurgeCommand } from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -74,12 +74,7 @@ async function main() {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
-Ошибка публикации превью для контента из ${gitCommitSha}. Подробнее [в логах](https://github.com/${
-      github.context.repo.owner
-    }/${github.context.repo.repo}/actions/runs/${github.context.runId}).
-}
-
-${getCommentFooter()}
+Ошибка публикации превью для контента из ${gitCommitSha}. Подробнее [в логах](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}).
     `);
     if (failOnError) {
       core.setFailed(err.message);
@@ -131,8 +126,6 @@ ${getCommentFooter()}
 
       return commentIfNotForkedRepo(`
 [Превью](https://${url}) ${gitCommitSha} удалено, PR уже закрыт.
-        
-${getCommentFooter()}
       `);
     } catch (err) {
       return fail?.(err);
@@ -141,8 +134,6 @@ ${getCommentFooter()}
 
   commentIfNotForkedRepo(`
 Идёт публикация превью для контента из ${gitCommitSha}… Подробнее [в логах](${buildingLogUrl}).
-
-${getCommentFooter()}
   `);
 
   const startTime = Date.now();
@@ -170,8 +161,6 @@ ${getCommentFooter()}
 [Превью контента](https://${url}) из ${gitCommitSha} опубликовано.
 
 Время сборки: **${duration} с**
-
-${getCommentFooter()}
     `);
   } catch (err) {
     fail?.(err);
