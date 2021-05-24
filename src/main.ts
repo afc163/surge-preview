@@ -74,7 +74,7 @@ async function main() {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
-Ошибка публикации превью для контента из ${gitCommitSha}. [Логи](https://github.com/${
+Ошибка публикации превью для контента из ${gitCommitSha}. Подробнее [в логах](https://github.com/${
       github.context.repo.owner
     }/${github.context.repo.repo}/actions/runs/${github.context.runId}).
 }
@@ -130,7 +130,7 @@ ${getCommentFooter()}
       });
 
       return commentIfNotForkedRepo(`
-[Превью](https://${url}) ${gitCommitSha} удалено, поскольку PR был закрыт.
+[Превью](https://${url}) ${gitCommitSha} удалено, PR уже закрыт.
         
 ${getCommentFooter()}
       `);
@@ -140,7 +140,7 @@ ${getCommentFooter()}
   }
 
   commentIfNotForkedRepo(`
-Идёт публикация превью для контента из ${gitCommitSha}... [Логи](${buildingLogUrl})
+Идёт публикация превью для контента из ${gitCommitSha}… Подробнее [в логах](${buildingLogUrl}).
 
 ${getCommentFooter()}
   `);
@@ -167,7 +167,7 @@ ${getCommentFooter()}
     });
 
     commentIfNotForkedRepo(`
-Превью контента из ${gitCommitSha} опубликовано и доступно по [ссылке](https://${url})
+[Превью контента](https://${url}) из ${gitCommitSha} опубликовано.
 
 Время сборки: **${duration} с**
 
