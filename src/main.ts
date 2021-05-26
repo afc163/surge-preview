@@ -2,7 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { exec } from '@actions/exec';
 import { comment } from './commentToPullRequest';
-import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
+import { execSurgeCommand } from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -50,10 +50,10 @@ async function main() {
     prNumber = pr ? pr.number : undefined;
   }
   if (!prNumber) {
-    core.info(`😢 No related PR found, skip it.`);
+    core.info(`Не найден PR, пропускаю.`);
     return;
   }
-  core.info(`Find PR number: ${prNumber}`);
+  core.info(`Найден PR с номером: ${prNumber}`);
 
   const commentIfNotForkedRepo = (message: string) => {
     // if it is forked repo, don't comment
@@ -74,17 +74,7 @@ async function main() {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
     commentIfNotForkedRepo(`
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${
-      github.context.repo.owner
-    }/${github.context.repo.repo}/actions/runs/${github.context.runId})
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
-})}
-
-${getCommentFooter()}
+Ошибка публикации превью для контента из ${gitCommitSha}. Подробнее [в логах](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}).
     `);
     if (failOnError) {
       core.setFailed(err.message);
@@ -135,15 +125,7 @@ ${getCommentFooter()}
       });
 
       return commentIfNotForkedRepo(`
-:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
-})}
-        
-${getCommentFooter()}
+[Превью](https://${url}) ${gitCommitSha} удалено, PR уже закрыт.
       `);
     } catch (err) {
       return fail?.(err);
@@ -151,15 +133,7 @@ ${getCommentFooter()}
   }
 
   commentIfNotForkedRepo(`
-⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
-})}
-
-${getCommentFooter()}
+Идёт публикация превью для контента из ${gitCommitSha}… Подробнее [в логах](${buildingLogUrl}).
   `);
 
   const startTime = Date.now();
@@ -184,17 +158,9 @@ ${getCommentFooter()}
     });
 
     commentIfNotForkedRepo(`
-🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
+[Превью контента](https://${url}) из ${gitCommitSha} опубликовано.
 
-:clock1: Build time: **${duration}s**
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
-})}
-
-${getCommentFooter()}
+Время сборки: **${duration} с**
     `);
   } catch (err) {
     fail?.(err);
