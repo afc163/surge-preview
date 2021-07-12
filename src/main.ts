@@ -87,6 +87,20 @@ async function main() {
 
   core.setOutput('preview_url', url);
 
+  const prFilesJson = await octokit.rest.pulls.listFiles({
+    owner: github.context.repo.owner,
+    repo: github.context.repo.repo,
+    pull_number: prNumber,
+  });
+
+  const prFiles = [];
+
+  for (const f of prFilesJson) {
+    if (f.filename.contains('index.md')) {
+      prFiles.push(f.filename.replace('index.md', ''));
+    }
+  }
+
   let data;
   try {
     const result = await octokit.checks.listForRef({
@@ -157,9 +171,17 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
+    let outputFiles = `
+    `;
+
+    for (let i = 0; i < prFiles.length; i++) {
+      outputFiles += `
+[Материал ${i}](https://${url}/${prFiles[i]})`;
+    }
+
     commentIfNotForkedRepo(`
 [Превью контента](https://${url}) из ${gitCommitSha} опубликовано.
-
+${outputFiles}
 Время сборки: **${duration} с**
     `);
   } catch (err) {
