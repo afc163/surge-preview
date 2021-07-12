@@ -174,9 +174,14 @@ async function main() {
     let outputFiles = `
     `;
 
-    for (let i = 0; i < prFiles.length; i++) {
+    if (prFiles.length > 1) {
+      for (let i = 0; i < prFiles.length; i++) {
+        outputFiles += `
+[Ссылка](https://${url}/${prFiles[i]}) на материал #${i + 1}`;
+      }
+    } else if (prFiles.length === 1) {
       outputFiles += `
-[Материал ${i}](https://${url}/${prFiles[i]})`;
+[Ссылка](https://${url}/${prFiles[0]}) на материал`;
     }
 
     commentIfNotForkedRepo(`
