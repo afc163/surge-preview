@@ -12,7 +12,9 @@
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map",
     "test": "jest --passWithNoTests",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
+    "pretty-quick": "pretty-quick",
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -47,10 +49,5 @@
     "pretty-quick": "^3.0.0",
     "ts-jest": "^27.0.5",
     "typescript": "^4.1.2"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
-    }
   }
 }
