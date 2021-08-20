@@ -39,11 +39,12 @@ async function main() {
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
   } else {
-    const result = await octokit.repos.listPullRequestsAssociatedWithCommit({
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      commit_sha: gitCommitSha,
-    });
+    const result =
+      await octokit.rest.repos.listPullRequestsAssociatedWithCommit({
+        owner: github.context.repo.owner,
+        repo: github.context.repo.repo,
+        commit_sha: gitCommitSha,
+      });
     const pr = result.data.length > 0 && result.data[0];
     core.debug('listPullRequestsAssociatedWithCommit');
     core.debug(JSON.stringify(pr, null, 2));
@@ -99,7 +100,7 @@ ${getCommentFooter()}
 
   let data;
   try {
-    const result = await octokit.checks.listForRef({
+    const result = await octokit.rest.checks.listForRef({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo,
       ref: gitCommitSha,

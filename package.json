@@ -12,7 +12,9 @@
     "lint": "eslint src/**/*.ts",
     "package": "ncc build --source-map",
     "test": "jest --passWithNoTests",
-    "all": "npm run build && npm run format && npm run lint && npm run package && npm test"
+    "pretty-quick": "pretty-quick",
+    "all": "npm run build && npm run format && npm run lint && npm run package && npm test",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -30,27 +32,22 @@
   "dependencies": {
     "@actions/core": "^1.2.6",
     "@actions/exec": "^1.0.4",
-    "@actions/github": "^4.0.0"
+    "@actions/github": "^5.0.0"
   },
   "devDependencies": {
-    "@types/jest": "^26.0.16",
-    "@types/node": "^14.14.10",
+    "@types/jest": "^27.0.1",
+    "@types/node": "^16.6.2",
     "@typescript-eslint/parser": "^4.15.2",
-    "@vercel/ncc": "^0.27.0",
+    "@vercel/ncc": "^0.29.2",
     "eslint": "^7.14.0",
     "eslint-plugin-github": "^4.1.1",
     "eslint-plugin-jest": "^24.1.5",
-    "husky": "^4.2.5",
-    "jest": "^26.6.3",
-    "jest-circus": "^26.6.3",
+    "husky": "^7.0.1",
+    "jest": "^27.0.6",
+    "jest-circus": "^27.0.6",
     "prettier": "^2.2.1",
     "pretty-quick": "^3.0.0",
-    "ts-jest": "^26.5.2",
+    "ts-jest": "^27.0.5",
     "typescript": "^4.1.2"
-  },
-  "husky": {
-    "hooks": {
-      "pre-commit": "pretty-quick --staged"
-    }
   }
 }
