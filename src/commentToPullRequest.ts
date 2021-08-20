@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
 import type { GitHub } from '@actions/github/lib/utils';
-import { findPreviousComment, createComment, updateComment } from './comment';
+import { createComment, findPreviousComment, updateComment } from './comment';
 
 export type Octokit = InstanceType<typeof GitHub>;
 export type Repo = {
