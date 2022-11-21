@@ -31,8 +31,8 @@ jobs:
         id: preview_action
         name: test afc163/surge-preview
         with:
+          # test the default 'github_token' value here
           surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           teardown: 'true'
           dist: public/preview2
           build: |
