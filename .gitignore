@@ -98,3 +98,7 @@ Thumbs.db
 __tests__/runner/*
 lib/**/*
 public
+
+# IDE
+.idea/
+*.iml

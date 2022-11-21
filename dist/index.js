@@ -204,7 +204,7 @@ const helpers_1 = __nccwpck_require__(5008);
 let failOnErrorGlobal = false;
 let fail;
 function main() {
-    var _a, _b, _c, _d, _e, _f, _g;
+    var _a, _b, _c, _d, _e, _f, _g, _h;
     return __awaiter(this, void 0, void 0, function* () {
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         const token = core.getInput('github_token', { required: true });
@@ -219,12 +219,13 @@ function main() {
         core.debug(JSON.stringify(github.context, null, 2));
         const { job, payload } = github.context;
         core.debug(`payload.after: ${payload.after}`);
-        core.debug(`payload.after: ${payload.pull_request}`);
+        core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
             ((_c = (_b = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _b === void 0 ? void 0 : _b.head) === null || _c === void 0 ? void 0 : _c.sha) ||
             ((_d = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _d === void 0 ? void 0 : _d.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        const fromForkedRepo = ((_e = payload.pull_request) === null || _e === void 0 ? void 0 : _e.owner) === github.context.repo.owner;
+        core.debug(`payload.pull_request?.head: ${(_e = payload.pull_request) === null || _e === void 0 ? void 0 : _e.head}`);
+        const fromForkedRepo = (_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head.repo.fork;
         if (payload.number && payload.pull_request) {
             prNumber = payload.number;
         }
@@ -247,6 +248,7 @@ function main() {
         const commentIfNotForkedRepo = (message) => {
             // if it is forked repo, don't comment
             if (fromForkedRepo) {
+                core.info('PR created from a forked repository, so skip PR comment');
                 return;
             }
             commentToPullRequest_1.comment({
@@ -295,8 +297,8 @@ ${helpers_1.getCommentFooter()}
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_f = data === null || data === void 0 ? void 0 : data.check_runs) === null || _f === void 0 ? void 0 : _f.length) >= 0) {
-            const checkRun = (_g = data === null || data === void 0 ? void 0 : data.check_runs) === null || _g === void 0 ? void 0 : _g.find((item) => item.name === job);
+        if (((_g = data === null || data === void 0 ? void 0 : data.check_runs) === null || _g === void 0 ? void 0 : _g.length) >= 0) {
+            const checkRun = (_h = data === null || data === void 0 ? void 0 : data.check_runs) === null || _h === void 0 ? void 0 : _h.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         const buildingLogUrl = checkRunId

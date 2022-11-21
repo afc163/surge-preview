@@ -27,14 +27,15 @@ async function main() {
   core.debug(JSON.stringify(github.context, null, 2));
   const { job, payload } = github.context;
   core.debug(`payload.after: ${payload.after}`);
-  core.debug(`payload.after: ${payload.pull_request}`);
+  core.debug(`payload.pull_request: ${payload.pull_request}`);
   const gitCommitSha =
     payload.after ||
     payload?.pull_request?.head?.sha ||
     payload?.workflow_run?.head_sha;
   core.debug(JSON.stringify(github.context.repo, null, 2));
-  const fromForkedRepo =
-    payload.pull_request?.owner === github.context.repo.owner;
+
+  core.debug(`payload.pull_request?.head: ${payload.pull_request?.head}`);
+  const fromForkedRepo = payload.pull_request?.head.repo.fork;
 
   if (payload.number && payload.pull_request) {
     prNumber = payload.number;
@@ -59,6 +60,7 @@ async function main() {
   const commentIfNotForkedRepo = (message: string) => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
+      core.info('PR created from a forked repository, so skip PR comment');
       return;
     }
     comment({
