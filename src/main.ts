@@ -60,6 +60,7 @@ async function main() {
   const commentIfNotForkedRepo = (message: string) => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
+      core.info('PR created from a forked repository, so skip PR comment');
       return;
     }
     comment({
