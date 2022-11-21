@@ -8,7 +8,7 @@ jobs:
   preview: # make sure the action works on a clean machine without building
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./
         id: preview_step
         name: test afc163/surge-preview
@@ -26,7 +26,7 @@ jobs:
   preview2:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: ./
         id: preview_action
         name: test afc163/surge-preview
