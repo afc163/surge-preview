@@ -8,6 +8,7 @@ inputs:
   github_token:
     description: 'github token'
     required: true
+    default: ${{ github.token }}
   build:
     description: 'build scripts'
     default: |

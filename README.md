@@ -30,13 +30,14 @@ on: [pull_request]
 jobs:
   preview:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # allow surge-preview to create/update PR comments
     steps:
       - uses: actions/checkout@v2
       - uses: afc163/surge-preview@v1
         id: preview_step
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: public
           build: |
             npm install
@@ -54,6 +55,9 @@ name: 🔂 Surge PR Preview
 
 on: [pull_request]
 
+permissions:
+  pull-requests: write # allow surge-preview to create/update PR comments
+
 jobs:
   preview-job-1:
     runs-on: ubuntu-latest
@@ -62,7 +66,6 @@ jobs:
       - uses: afc163/surge-preview@v1
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: public
           build: |
             npm install
@@ -74,7 +77,6 @@ jobs:
       - uses: afc163/surge-preview@v1
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: public
           build: |
             npm install
@@ -102,12 +104,13 @@ on:
 jobs:
   preview:
     runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # allow surge-preview to create/update PR comments
     steps:
       - uses: actions/checkout@v2
       - uses: afc163/surge-preview@v1
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
-          github_token: ${{ secrets.GITHUB_TOKEN }}
           dist: public
           teardown: 'true'
           build: |
@@ -118,7 +121,7 @@ jobs:
 ### Inputs
 
 - `surge_token`: [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).
-- `github_token`: `secrets.GITHUB_TOKEN`.
+- `github_token`: Defaults: [`github.token`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow). It is used to create Pull Request comment, so it requires the `pull-requests` permission set to `write` permission. Possible value: `secrets.GITHUB_TOKEN`.
 - `build`: build scripts to run before deploy.
 - `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
 - `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
