@@ -189,7 +189,7 @@ ${getCommentFooter()}
     commentIfNotForkedRepo(`
 🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
 
-:clock1: Build time: **${duration}s**
+🕐 Build time: **${duration}s**
 
 ${formatImage({
   buildingLogUrl,
