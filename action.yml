@@ -29,7 +29,7 @@ outputs:
   preview_url:
     description: 'The url for the related PR preview'
 runs:
-  using: node16
+  using: node20
   main: 'dist/index.js'
 branding:
   icon: 'monitor'
