@@ -42,7 +42,7 @@
     "eslint": "^7.14.0",
     "eslint-plugin-github": "^4.3.2",
     "eslint-plugin-jest": "^24.1.5",
-    "husky": "^7.0.1",
+    "husky": "^9.0.11",
     "jest": "^27.0.6",
     "jest-circus": "^27.0.6",
     "prettier": "^2.2.1",
