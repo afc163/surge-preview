@@ -1,6 +1,6 @@
 import * as core from '@actions/core';
-import * as github from '@actions/github';
 import { exec } from '@actions/exec';
+import * as github from '@actions/github';
 import { comment } from './commentToPullRequest';
 import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
 
@@ -19,7 +19,7 @@ async function main() {
   );
   failOnErrorGlobal = failOnError;
   core.debug(
-    `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`
+    `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`,
   );
   const octokit = github.getOctokit(token);
   let prNumber: number | undefined;
@@ -76,7 +76,7 @@ async function main() {
     comment({
       repo: github.context.repo,
       // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-      number: prNumber!,
+      number: prNumber,
       message,
       octokit,
       header: job,
@@ -119,7 +119,9 @@ ${getCommentFooter()}
     });
     data = result.data;
   } catch (err) {
-    fail(err);
+    if (err instanceof Error) {
+      fail(err);
+    }
     return;
   }
 
@@ -159,7 +161,9 @@ ${formatImage({
 ${getCommentFooter()}
       `);
     } catch (err) {
-      return fail?.(err);
+      if (err instanceof Error) {
+        return fail?.(err);
+      }
     }
   }
 
@@ -210,7 +214,9 @@ ${formatImage({
 ${getCommentFooter()}
     `);
   } catch (err) {
-    fail?.(err);
+    if (err instanceof Error) {
+      fail?.(err);
+    }
   }
 }
 
