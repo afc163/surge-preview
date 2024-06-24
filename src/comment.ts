@@ -8,7 +8,7 @@ export async function findPreviousComment(
   octokit: Octokit,
   repo: Repo,
   issue_number: number,
-  header?: string
+  header?: string,
 ) {
   const { data: comments } = await octokit.rest.issues.listComments({
     ...repo,
@@ -24,7 +24,7 @@ export async function updateComment(
   comment_id: number,
   body: string,
   header?: string,
-  previousBody?: string | false
+  previousBody?: string | false,
 ) {
   await octokit.rest.issues.updateComment({
     ...repo,
@@ -41,7 +41,7 @@ export async function createComment(
   issue_number: number,
   body: string,
   header?: string,
-  previousBody?: string | false
+  previousBody?: string | false,
 ) {
   await octokit.rest.issues.createComment({
     ...repo,
@@ -55,7 +55,7 @@ export async function createComment(
 export async function deleteComment(
   octokit: Octokit,
   repo: Repo,
-  comment_id: number
+  comment_id: number,
 ) {
   await octokit.rest.issues.deleteComment({
     ...repo,
