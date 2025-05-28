@@ -121,7 +121,7 @@ jobs:
 
 ### Usage to deal with PRs created from forked repositories
 
-When someone creates a PR from a forked repository, there is a security challenge: workflows triggered by `pull_request` events do not have access your to repository secrets (like your surge token) for security reasons.
+When someone creates a PR from a forked repository, there is a security challenge: workflows triggered by `pull_request` events do not have access to your to repository secrets (like your surge token) for security reasons.
 
 **Why this is a problem:** Without access to the surge token, the preview deployment will fail.
 
@@ -139,11 +139,15 @@ This approach separates the build and deployment steps for improved security:
 2. **Deploy workflow**: Deploys the pre-built site using your secrets
 3. **Teardown workflow**: Removes the preview when a PR is closed
 
-#### How it works:
+#### How it works
 
 1. First workflow builds the site and saves it as an artifact
 2. Second workflow retrieves the artifact and deploys it to Surge
 3. Third workflow handles cleanup when PRs are closed
+
+#### Example Workflows
+
+Here is an example of how to set up these workflows in your repository:
 
 **Build workflow** (triggered by `pull_request`):
 
