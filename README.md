@@ -120,12 +120,14 @@ jobs:
 
 ### Inputs
 
-- `surge_token`: [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).
-- `github_token`: Defaults: [`github.token`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow). It is used to create Pull Request comment, so it requires the `pull-requests` permission set to `write` permission. Possible value: `secrets.GITHUB_TOKEN`.
-- `build`: build scripts to run before deploy.
-- `dist`: dist folder deployed to [surge.sh](https://surge.sh/).
-- `failOnError`: Set `failed` if a deployment throws error, defaults to `false`.
-- `teardown`: Determines if the preview instance will be torn down on PR close, defaults to `false`.
+| Parameter       | Description                                                                                                                       | Default                                                                                                                                  |
+|-----------------|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `surge_token`   | [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).                                                      | An arbitrary token for demonstration. Use your own, otherwise anybody using this action can control your surge domain.                   |
+| `github_token`  | Used to create Pull Request comment, requires `pull-requests` permission set to `write`. Possible value: `secrets.GITHUB_TOKEN`.  | [`github.token`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow) |
+| `build`         | Build scripts to run before deploy.                                                                                               | `npm install` <br> `npm run build`                                                                                                       |
+| `dist`          | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                            | `public`                                                                                                                                 |
+| `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
+| `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
 
 ### Outputs
 
