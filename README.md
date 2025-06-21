@@ -151,6 +151,8 @@ jobs:
 - https://github.com/jdf2e/nutui
 - https://github.com/ant-design-colorful/ant-design-colorful
 - https://github.com/iambumblehead/react-dropdown-now
+- https://github.com/libwebp-wasm/gif2webp
+- https://github.com/libwebp-wasm/img2webp
 
 ### Thanks to
 
