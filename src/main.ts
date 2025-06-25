@@ -26,7 +26,11 @@ async function main() {
   let prState: string | undefined;
   core.debug('github.context');
   core.debug(JSON.stringify(github.context, null, 2));
+
   const { job, payload } = github.context;
+  const deploymentId = core.getInput('deploymentId') ?? job;
+  core.debug(`deploymentId: ${deploymentId}`);
+
   core.debug(`payload.after: ${payload.after}`);
   core.debug(`payload.pull_request: ${payload.pull_request}`);
   const gitCommitSha =
@@ -79,7 +83,7 @@ async function main() {
       number: prNumber,
       message,
       octokit,
-      header: job,
+      header: deploymentId,
     });
   };
 
@@ -106,7 +110,7 @@ ${getCommentFooter()}
 
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
   const repoName = github.context.repo.repo.replace(/\./g, '-');
-  const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+  const url = `${repoOwner}-${repoName}-${deploymentId}-pr-${prNumber}.surge.sh`;
 
   core.setOutput('preview_url', url);
 
