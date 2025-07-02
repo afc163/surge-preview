@@ -26,7 +26,7 @@ inputs:
     default: 'false'
     required: false
   deploymentId:
-    description: 'A value used as an unique identifier of the deployment for the current PR. It is used in the surge URL and to identify PR comments created by this action.'
+    description: 'A value used as a unique identifier of the deployment for the current PR. It is used in the surge URL and to identify PR comments created by this action.'
     required: false
 outputs:
   preview_url:
