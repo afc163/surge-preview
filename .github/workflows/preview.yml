@@ -41,3 +41,22 @@ jobs:
             npm run build-preview -- public/preview2
       - name: Get the output url
         run: echo "url => ${{ steps.preview_action.outputs.preview_url }}"
+  preview3_with_deploymentId: # this job name is not used by the surge-preview action. Instead, it uses the `deploymentId` input to generate a unique URL for each PR preview.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./
+        id: preview_action
+        name: test afc163/surge-preview
+        with:
+          # test the default 'github_token' value here
+          surge_token: ${{ secrets.SURGE_TOKEN }}
+          teardown: 'true'
+          deploymentId: 'preview3'
+          dist: public/preview3
+          build: |
+            mkdir -p public/preview3
+            npm install
+            npm run build-preview -- public/preview3
+      - name: Get the output url
+        run: echo "url => ${{ steps.preview_action.outputs.preview_url }}"
