@@ -195,9 +195,6 @@ permissions:
   pull-requests: write # Needed to comment on PRs
 
 jobs:
-  # Important - the job id:
-  # MUST be unique across all surge preview deployments for a repository as the job id is used in the deployment URL
-  # MUST be kept in sync with the job id of the teardown stage (this id is used by the surge-preview action to forge the deployment URL)
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
@@ -216,6 +213,10 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Important - the deployment id:
+          # MUST be unique across all surge preview deployments for a repository
+          # MUST be kept in sync with the id of the teardown stage (this id is used by the surge-preview action to forge the deployment URL)
+          deploymentId: 'preview' 
           build: echo done
           dist: site
           failOnError: true
@@ -235,7 +236,7 @@ permissions:
   pull-requests: write # Needed to comment on PRs
 
 jobs:
-  deploy: # Must match the job ID from the deploy workflow
+  teardown:
     runs-on: ubuntu-latest
     steps:
       - name: Teardown preview site
@@ -243,6 +244,7 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploymentId: 'preview' # Must match the ID from the deploy workflow'
           failOnError: true
           teardown: true
           build: echo "Cleaning up preview" 
@@ -273,14 +275,15 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 
 ### Inputs
 
-| Parameter       | Description                                                                                                                       | Default                                                                                                                                  |
-|-----------------|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
-| `surge_token`   | [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).                                                      | An arbitrary token for demonstration. Use your own, otherwise anybody using this action can control your surge domain.                   |
-| `github_token`  | Used to create Pull Request comment, requires `pull-requests` permission set to `write`. Possible value: `secrets.GITHUB_TOKEN`.  | [`github.token`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow) |
-| `build`         | Build scripts to run before deploy.                                                                                               | `npm install` <br> `npm run build`                                                                                                       |
-| `dist`          | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                            | `public`                                                                                                                                 |
-| `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
-| `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
+| Parameter      | Description                                                                                                                                                | Default                                                                                                                                  |
+|----------------|------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
+| `surge_token`  | [Getting your Surge token](https://surge.sh/help/integrating-with-circleci).                                                                               | An arbitrary token for demonstration. Use your own, otherwise anybody using this action can control your surge domain.                   |
+| `github_token` | Used to create Pull Request comment, requires `pull-requests` permission set to `write`. Possible value: `secrets.GITHUB_TOKEN`.                           | [`github.token`](https://docs.github.com/en/actions/security-guides/automatic-token-authentication#using-the-github_token-in-a-workflow) |
+| `build`        | Build scripts to run before deploy.                                                                                                                        | `npm install` <br> `npm run build`                                                                                                       |
+| `dist`         | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                                                     | `public`                                                                                                                                 |
+| `failOnError`  | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                                              | `false`                                                                                                                                  |
+| `teardown`     | Determines if the preview instance will be torn down on PR close.                                                                                          | `false`                                                                                                                                  |
+| `deploymentId` | Unique identifier for the current PR deployment, used in the Surge URL and to match PR comments created by this action. | `job.name`                                                                                                                               |
 
 ### Outputs
 

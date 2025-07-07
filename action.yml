@@ -25,6 +25,9 @@ inputs:
     description: 'Determines if the preview instance will be torn down on PR close'
     default: 'false'
     required: false
+  deploymentId:
+    description: 'Unique identifier for the current PR deployment, used in the Surge URL and to match PR comments created by this action.'
+    required: false
 outputs:
   preview_url:
     description: 'The url for the related PR preview'
