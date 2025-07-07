@@ -195,9 +195,6 @@ permissions:
   pull-requests: write # Needed to comment on PRs
 
 jobs:
-  # Important - the job id:
-  # MUST be unique across all surge preview deployments for a repository as the job id is used in the deployment URL
-  # MUST be kept in sync with the job id of the teardown stage (this id is used by the surge-preview action to forge the deployment URL)
   deploy:
     runs-on: ubuntu-latest
     if: ${{ github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.conclusion == 'success' }}
@@ -216,6 +213,10 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          # Important - the deployment id:
+          # MUST be unique across all surge preview deployments for a repository
+          # MUST be kept in sync with the id of the teardown stage (this id is used by the surge-preview action to forge the deployment URL)
+          deploymentId: 'preview' 
           build: echo done
           dist: site
           failOnError: true
@@ -235,7 +236,7 @@ permissions:
   pull-requests: write # Needed to comment on PRs
 
 jobs:
-  deploy: # Must match the job ID from the deploy workflow
+  teardown:
     runs-on: ubuntu-latest
     steps:
       - name: Teardown preview site
@@ -243,6 +244,7 @@ jobs:
         with:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          deploymentId: 'preview' # Must match the ID from the deploy workflow'
           failOnError: true
           teardown: true
           build: echo "Cleaning up preview" 
