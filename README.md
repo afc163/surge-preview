@@ -281,7 +281,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `dist`         | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                                                     | `public`                                                                                                                                 |
 | `failOnError`  | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                                              | `false`                                                                                                                                  |
 | `teardown`     | Determines if the preview instance will be torn down on PR close.                                                                                          | `false`                                                                                                                                  |
-| `deploymentId` | A value used as a unique identifier of the deployment for the current PR. It is used in the surge URL and to identify PR comments created by this action. | `job.name`                                                                                                                               |
+| `deploymentId` | Unique identifier for the current PR deployment, used in the Surge URL and to match PR comments created by this action. | `job.name`                                                                                                                               |
 
 ### Outputs
 
