@@ -62,4 +62,21 @@ describe('comment', () => {
     expect(updateComment.mock.calls[0][0].comment_id).toBe(42);
     expect(createComment).not.toHaveBeenCalled();
   });
+
+  it('passes the previous comment body to a message builder', async () => {
+    const header = '<!-- Sticky Pull Request Comment: Surge Preview build -->';
+    listComments.mockResolvedValue({
+      data: [{ id: 7, body: `previous body\n${header}` }],
+    });
+    const builder = jest.fn((previousBody?: string) => `new ${previousBody}`);
+    await comment({
+      repo,
+      number: 1,
+      message: builder,
+      octokit,
+      header: 'build',
+    });
+    expect(builder).toHaveBeenCalledWith(`previous body\n${header}`);
+    expect(updateComment.mock.calls[0][0].body).toContain('new previous body');
+  });
 });
