@@ -113,7 +113,7 @@ function comment(_a) {
         const prefixedHeader = `: Surge Preview ${header}`;
         try {
             const previous = yield (0, comment_1.findPreviousComment)(octokit, repo, number, prefixedHeader);
-            const body = message;
+            const body = typeof message === 'function' ? message(previous === null || previous === void 0 ? void 0 : previous.body) : message;
             if (previous) {
                 yield (0, comment_1.updateComment)(octokit, repo, previous.id, body, prefixedHeader, false);
             }
@@ -150,7 +150,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -167,14 +167,161 @@ const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ co
     }
 });
 exports.execSurgeCommand = execSurgeCommand;
-const formatImage = ({ buildingLogUrl, imageUrl, }) => {
-    return `<a href="${buildingLogUrl}"><img width="300" src="${imageUrl}"></a>`;
+const formatImage = ({ buildingLogUrl, imageUrl, width = 300, alt = 'PR preview status', }) => {
+    return `<a href="${buildingLogUrl}"><img width="${width}" alt="${alt}" src="${imageUrl}"></a>`;
 };
 exports.formatImage = formatImage;
 const getCommentFooter = () => {
-    return '<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>';
+    return '<sub>🤖 Powered by <a href="https://github.com/afc163/surge-preview">surge-preview</a></sub>';
 };
 exports.getCommentFooter = getCommentFooter;
+// Default screenshots hosted on GitHub user-images. Kept identical to the
+// previous inline URLs so existing behaviour is preserved.
+const STATUS_META = {
+    building: {
+        title: '## ⚡️ Deploying preview…',
+        badge: '⚡️ Building',
+        previewNote: 'building, please wait…',
+        imageUrl: 'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
+    },
+    success: {
+        title: '## ✅ Preview is ready!',
+        badge: '✅ Ready',
+        imageUrl: 'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
+    },
+    fail: {
+        title: '## ❌ Deploy failed',
+        badge: '❌ Failed',
+        previewNote: 'may be unavailable',
+        imageUrl: 'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
+    },
+    destroy: {
+        title: '## ♻️ Preview destroyed',
+        badge: '♻️ Destroyed',
+        previewNote: 'already destroyed',
+        imageUrl: 'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
+    },
+};
+const META_PREFIX = '<!-- surge-preview-meta:';
+const META_SUFFIX = '-->';
+/**
+ * Serialises the current deployment into a hidden HTML comment so the next run
+ * can recover it via `parsePreviousDeployment`.
+ */
+const encodeDeploymentMeta = (snapshot) => `${META_PREFIX}${JSON.stringify(snapshot)}${META_SUFFIX}`;
+exports.encodeDeploymentMeta = encodeDeploymentMeta;
+const isNonEmptyString = (value) => typeof value === 'string' && value.length > 0;
+// The snapshot lives in the comment body, which anyone with write access can
+// edit, so a syntactically valid but structurally wrong JSON must not slip
+// through and render garbage like `https://undefined`.
+const isPreviousDeployment = (value) => {
+    if (!value || typeof value !== 'object') {
+        return false;
+    }
+    const v = value;
+    return (typeof v.status === 'string' &&
+        v.status in STATUS_META &&
+        isNonEmptyString(v.shortSha) &&
+        isNonEmptyString(v.previewUrl) &&
+        isNonEmptyString(v.updatedAt));
+};
+/**
+ * Recovers the previous deployment snapshot from an existing comment body.
+ * Returns undefined when there is no (valid) embedded snapshot.
+ */
+const parsePreviousDeployment = (previousBody) => {
+    if (!previousBody) {
+        return undefined;
+    }
+    const start = previousBody.indexOf(META_PREFIX);
+    if (start === -1) {
+        return undefined;
+    }
+    const end = previousBody.indexOf(META_SUFFIX, start);
+    if (end === -1) {
+        return undefined;
+    }
+    const json = previousBody.slice(start + META_PREFIX.length, end).trim();
+    try {
+        const parsed = JSON.parse(json);
+        return isPreviousDeployment(parsed) ? parsed : undefined;
+    }
+    catch (_a) {
+        return undefined;
+    }
+};
+exports.parsePreviousDeployment = parsePreviousDeployment;
+const formatUpdatedAt = () => new Date().toISOString().replace('T', ' ').slice(0, 19);
+const PREVIOUS_BADGE = {
+    building: '⚡️',
+    success: '✅',
+    fail: '❌',
+    destroy: '♻️',
+};
+/**
+ * Builds a rich, table-based status card for the PR comment. The left column
+ * holds the status screenshot and the right column stacks the deployment
+ * details, so the header stays meaningful. A previous deployment, when
+ * provided, is surfaced below the card and re-embedded for the next run.
+ */
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, }) => {
+    var _a;
+    const meta = STATUS_META[status];
+    const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
+    const updatedAt = formatUpdatedAt();
+    const previewValue = status === 'success' || status === 'building'
+        ? `<a href="https://${previewUrl}">https://${previewUrl}</a>`
+        : `<s>https://${previewUrl}</s> <sub>(${meta.previewNote})</sub>`;
+    const lines = [{ full: `🔗 <b>Preview</b> ${previewValue}` }];
+    if (shortSha && commitUrl) {
+        lines.push({
+            label: '📝 Commit',
+            value: `<a href="${commitUrl}"><code>${shortSha}</code></a>`,
+        });
+    }
+    if (status === 'success' && typeof duration === 'number') {
+        lines.push({ label: '⏱️ Build time', value: `<code>${duration}s</code>` });
+    }
+    lines.push({
+        label: '🪵 Logs',
+        value: `<a href="${buildingLogUrl}">View logs</a>`,
+    });
+    lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
+    const image = (0, exports.formatImage)({
+        buildingLogUrl,
+        imageUrl: imageUrl !== null && imageUrl !== void 0 ? imageUrl : meta.imageUrl,
+        width: 200,
+        alt: `PR preview ${meta.badge}`,
+    });
+    // The screenshot spans the badge banner row plus every detail line, so it
+    // sits as one tall block on the left while the right side staggers.
+    const rowSpan = lines.length + 1;
+    const detailRows = lines
+        .map((line) => 'full' in line
+        ? `  <tr><td colspan="2">${line.full}</td></tr>`
+        : `  <tr><td>${line.label}</td><td>${line.value}</td></tr>`)
+        .join('\n');
+    const table = [
+        '<table>',
+        '  <tr>',
+        `    <td rowspan="${rowSpan}" align="center" width="220">${image}</td>`,
+        `    <td colspan="2"><b>${meta.badge}</b></td>`,
+        '  </tr>',
+        detailRows,
+        '</table>',
+    ].join('\n');
+    const parts = [meta.title, '', table, ''];
+    if (previous) {
+        const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
+        // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
+        // an extra empty <a> (which it does when the text itself looks like a URL).
+        const prevPreview = `<a href="https://${previous.previewUrl}">open ↗</a>`;
+        parts.push(`<sub>↩️ Previous: ${badge} <code>${previous.shortSha}</code> · ${previous.previewUrl} (${prevPreview}) · ${previous.updatedAt} UTC</sub>`, '');
+    }
+    parts.push((0, exports.encodeDeploymentMeta)({ status, shortSha, previewUrl, updatedAt }), (0, exports.getCommentFooter)());
+    return parts.join('\n');
+};
+exports.getCommentBody = getCommentBody;
 
 
 /***/ }),
@@ -314,26 +461,27 @@ function main() {
         // the check run id. Declared before `fail` so it is never referenced in the
         // temporal dead zone when `fail` is invoked early (e.g. listForRef throws).
         let buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
+        // Fall back to the context sha so the commit link is never `.../commit/undefined`
+        // when the event payload does not carry a head sha.
+        const commitSha = gitCommitSha || github.context.sha;
+        const commitUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/commit/${commitSha}`;
+        const repoOwner = github.context.repo.owner.replace(/\./g, '-');
+        const repoName = github.context.repo.repo.replace(/\./g, '-');
+        const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
         fail = (err) => {
             core.info('error message:');
             core.info(JSON.stringify(err, null, 2));
-            commentIfNotForkedRepo(`
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId})
-
-${(0, helpers_1.formatImage)({
+            commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
+                status: 'fail',
+                previewUrl: url,
+                gitCommitSha: commitSha,
+                commitUrl,
                 buildingLogUrl,
-                imageUrl: 'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
-            })}
-
-${(0, helpers_1.getCommentFooter)()}
-    `);
+            }));
             if (failOnError) {
                 core.setFailed(err.message);
             }
         };
-        const repoOwner = github.context.repo.owner.replace(/\./g, '-');
-        const repoName = github.context.repo.repo.replace(/\./g, '-');
-        const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
         core.setOutput('preview_url', url);
         let data;
         try {
@@ -368,16 +516,13 @@ ${(0, helpers_1.getCommentFooter)()}
                 yield (0, helpers_1.execSurgeCommand)({
                     command: ['surge', 'teardown', url, `--token`, surgeToken],
                 });
-                return commentIfNotForkedRepo(`
-:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
-
-${(0, helpers_1.formatImage)({
+                return commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
+                    status: 'destroy',
+                    previewUrl: url,
+                    gitCommitSha: commitSha,
+                    commitUrl,
                     buildingLogUrl,
-                    imageUrl: 'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
-                })}
-        
-${(0, helpers_1.getCommentFooter)()}
-      `);
+                }));
             }
             catch (err) {
                 if (err instanceof Error) {
@@ -385,16 +530,16 @@ ${(0, helpers_1.getCommentFooter)()}
                 }
             }
         }
-        commentIfNotForkedRepo(`
-⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
-
-${(0, helpers_1.formatImage)({
+        // While a new build is running, carry forward the previous deployment that
+        // is still live, recovered from the existing comment body.
+        commentIfNotForkedRepo((previousBody) => (0, helpers_1.getCommentBody)({
+            status: 'building',
+            previewUrl: url,
+            gitCommitSha: commitSha,
+            commitUrl,
             buildingLogUrl,
-            imageUrl: 'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
-        })}
-
-${(0, helpers_1.getCommentFooter)()}
-  `);
+            previous: (0, helpers_1.parsePreviousDeployment)(previousBody),
+        }));
         const startTime = Date.now();
         try {
             if (!core.getInput('build')) {
@@ -414,18 +559,14 @@ ${(0, helpers_1.getCommentFooter)()}
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
-            commentIfNotForkedRepo(`
-🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
-
-🕐 Build time: **${duration}s**
-
-${(0, helpers_1.formatImage)({
+            commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
+                status: 'success',
+                previewUrl: url,
+                gitCommitSha: commitSha,
+                commitUrl,
                 buildingLogUrl,
-                imageUrl: 'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
-            })}
-
-${(0, helpers_1.getCommentFooter)()}
-    `);
+                duration,
+            }));
         }
         catch (err) {
             if (err instanceof Error) {

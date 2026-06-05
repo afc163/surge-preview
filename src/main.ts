@@ -2,7 +2,11 @@ import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import * as github from '@actions/github';
 import { comment } from './commentToPullRequest';
-import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
+import {
+  execSurgeCommand,
+  getCommentBody,
+  parsePreviousDeployment,
+} from './helpers';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -76,7 +80,9 @@ async function main() {
   }
   core.info(`Found PR number: ${prNumber}, PR status: ${prState}`);
 
-  const commentIfNotForkedRepo = (message: string) => {
+  const commentIfNotForkedRepo = (
+    message: string | ((previousBody?: string) => string),
+  ) => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
       core.info('PR created from a forked repository, so skip PR comment');
@@ -95,31 +101,31 @@ async function main() {
   // the check run id. Declared before `fail` so it is never referenced in the
   // temporal dead zone when `fail` is invoked early (e.g. listForRef throws).
   let buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
-
-  fail = (err: Error) => {
-    core.info('error message:');
-    core.info(JSON.stringify(err, null, 2));
-    commentIfNotForkedRepo(`
-😭 Deploy PR Preview ${gitCommitSha} failed. [Build logs](https://github.com/${
-      github.context.repo.owner
-    }/${github.context.repo.repo}/actions/runs/${github.context.runId})
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250824-4e066700-de6f-11ea-8230-600ecc3d6a6b.png',
-})}
-
-${getCommentFooter()}
-    `);
-    if (failOnError) {
-      core.setFailed(err.message);
-    }
-  };
+  // Fall back to the context sha so the commit link is never `.../commit/undefined`
+  // when the event payload does not carry a head sha.
+  const commitSha = gitCommitSha || github.context.sha;
+  const commitUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/commit/${commitSha}`;
 
   const repoOwner = github.context.repo.owner.replace(/\./g, '-');
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+
+  fail = (err: Error) => {
+    core.info('error message:');
+    core.info(JSON.stringify(err, null, 2));
+    commentIfNotForkedRepo(
+      getCommentBody({
+        status: 'fail',
+        previewUrl: url,
+        gitCommitSha: commitSha,
+        commitUrl,
+        buildingLogUrl,
+      }),
+    );
+    if (failOnError) {
+      core.setFailed(err.message);
+    }
+  };
 
   core.setOutput('preview_url', url);
 
@@ -161,17 +167,15 @@ ${getCommentFooter()}
         command: ['surge', 'teardown', url, `--token`, surgeToken],
       });
 
-      return commentIfNotForkedRepo(`
-:recycle: [PR Preview](https://${url}) ${gitCommitSha} has been successfully destroyed since this PR has been closed.
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/98094112-d838f700-1ec3-11eb-8530-381c2276b80e.png',
-})}
-        
-${getCommentFooter()}
-      `);
+      return commentIfNotForkedRepo(
+        getCommentBody({
+          status: 'destroy',
+          previewUrl: url,
+          gitCommitSha: commitSha,
+          commitUrl,
+          buildingLogUrl,
+        }),
+      );
     } catch (err) {
       if (err instanceof Error) {
         return fail?.(err);
@@ -179,17 +183,18 @@ ${getCommentFooter()}
     }
   }
 
-  commentIfNotForkedRepo(`
-⚡️ Deploying PR Preview ${gitCommitSha} to [surge.sh](https://${url}) ... [Build logs](${buildingLogUrl})
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90240294-8d2abd00-de5b-11ea-8140-4840a0b2d571.gif',
-})}
-
-${getCommentFooter()}
-  `);
+  // While a new build is running, carry forward the previous deployment that
+  // is still live, recovered from the existing comment body.
+  commentIfNotForkedRepo((previousBody) =>
+    getCommentBody({
+      status: 'building',
+      previewUrl: url,
+      gitCommitSha: commitSha,
+      commitUrl,
+      buildingLogUrl,
+      previous: parsePreviousDeployment(previousBody),
+    }),
+  );
 
   const startTime = Date.now();
   try {
@@ -211,19 +216,16 @@ ${getCommentFooter()}
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
-    commentIfNotForkedRepo(`
-🎊 PR Preview ${gitCommitSha} has been successfully built and deployed to https://${url}
-
-🕐 Build time: **${duration}s**
-
-${formatImage({
-  buildingLogUrl,
-  imageUrl:
-    'https://user-images.githubusercontent.com/507615/90250366-88233900-de6e-11ea-95a5-84f0762ffd39.png',
-})}
-
-${getCommentFooter()}
-    `);
+    commentIfNotForkedRepo(
+      getCommentBody({
+        status: 'success',
+        previewUrl: url,
+        gitCommitSha: commitSha,
+        commitUrl,
+        buildingLogUrl,
+        duration,
+      }),
+    );
   } catch (err) {
     if (err instanceof Error) {
       fail?.(err);

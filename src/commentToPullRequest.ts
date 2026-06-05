@@ -11,7 +11,9 @@ export type Repo = {
 interface CommentConfig {
   repo: Repo;
   number: number;
-  message: string;
+  // Either a ready-made message, or a builder that receives the previous
+  // comment body so the new message can carry forward earlier information.
+  message: string | ((previousBody?: string) => string);
   octokit: Octokit;
   header: string;
 }
@@ -36,7 +38,8 @@ export async function comment({
       number,
       prefixedHeader,
     );
-    const body = message;
+    const body =
+      typeof message === 'function' ? message(previous?.body) : message;
 
     if (previous) {
       await updateComment(

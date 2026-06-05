@@ -1,5 +1,12 @@
 import { exec } from '@actions/exec';
-import { execSurgeCommand, formatImage, getCommentFooter } from './helpers';
+import {
+  encodeDeploymentMeta,
+  execSurgeCommand,
+  formatImage,
+  getCommentBody,
+  getCommentFooter,
+  parsePreviousDeployment,
+} from './helpers';
 
 jest.mock('@actions/exec');
 
@@ -13,7 +20,20 @@ describe('formatImage', () => {
         imageUrl: 'https://example.com/img.png',
       }),
     ).toBe(
-      '<a href="https://example.com/log"><img width="300" src="https://example.com/img.png"></a>',
+      '<a href="https://example.com/log"><img width="300" alt="PR preview status" src="https://example.com/img.png"></a>',
+    );
+  });
+
+  it('honours a custom width and alt text', () => {
+    expect(
+      formatImage({
+        buildingLogUrl: 'https://example.com/log',
+        imageUrl: 'https://example.com/img.png',
+        width: 420,
+        alt: 'custom alt',
+      }),
+    ).toBe(
+      '<a href="https://example.com/log"><img width="420" alt="custom alt" src="https://example.com/img.png"></a>',
     );
   });
 });
@@ -21,7 +41,155 @@ describe('formatImage', () => {
 describe('getCommentFooter', () => {
   it('returns the surge-preview footer', () => {
     expect(getCommentFooter()).toBe(
-      '<sub>🤖 By [surge-preview](https://github.com/afc163/surge-preview)</sub>',
+      '<sub>🤖 Powered by <a href="https://github.com/afc163/surge-preview">surge-preview</a></sub>',
+    );
+  });
+});
+
+describe('getCommentBody', () => {
+  const baseOptions = {
+    previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+    gitCommitSha: '2eeb596abcdef1234567890',
+    commitUrl: 'https://github.com/afc163/surge-preview/commit/2eeb596',
+    buildingLogUrl: 'https://github.com/afc163/surge-preview/runs/123',
+  };
+
+  beforeAll(() => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-06-05T04:12:33Z'));
+  });
+
+  afterAll(() => {
+    jest.useRealTimers();
+  });
+
+  it('renders a success card with build time and a live preview link', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      duration: 12.3,
+    });
+    expect(body).toContain('## ✅ Preview is ready!');
+    expect(body).toContain('<b>✅ Ready</b>');
+    expect(body).toContain('<td>⏱️ Build time</td><td><code>12.3s</code></td>');
+    expect(body).toContain(
+      '<a href="https://owner-repo-preview-pr-1.surge.sh">https://owner-repo-preview-pr-1.surge.sh</a>',
+    );
+    // short sha is truncated to 7 chars and linked to the commit url
+    expect(body).toContain(
+      '<a href="https://github.com/afc163/surge-preview/commit/2eeb596"><code>2eeb596</code></a>',
+    );
+    expect(body).toContain(
+      '<a href="https://github.com/afc163/surge-preview/runs/123">View logs</a>',
+    );
+    expect(body).toContain(
+      '<td>🕐 Updated</td><td><code>2026-06-05 04:12:33</code> UTC</td>',
+    );
+    // screenshot lives inside the table and spans the rows via rowspan
+    expect(body).toContain('<table>');
+    expect(body).toContain('rowspan="6"');
+    expect(body).toContain('width="200"');
+    expect(body).toContain('alt="PR preview ✅ Ready"');
+  });
+
+  it('renders a building card without build time', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'building' });
+    expect(body).toContain('## ⚡️ Deploying preview…');
+    expect(body).toContain('<b>⚡️ Building</b>');
+    expect(body).not.toContain('Build time');
+    expect(body).not.toContain('<code>12.3s</code>');
+    // one fewer detail row than the success card → smaller rowspan
+    expect(body).toContain('rowspan="5"');
+  });
+
+  it('renders a fail card with a struck-through preview link', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'fail' });
+    expect(body).toContain('## ❌ Deploy failed');
+    expect(body).toContain('<s>https://owner-repo-preview-pr-1.surge.sh</s>');
+  });
+
+  it('renders a destroy card', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'destroy' });
+    expect(body).toContain('## ♻️ Preview destroyed');
+    expect(body).toContain('already destroyed');
+  });
+
+  it('omits the commit line when there is no sha', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      gitCommitSha: '',
+    });
+    expect(body).not.toContain('<code></code>');
+    expect(body).not.toContain('/commit/');
+  });
+
+  it('shows the previous deployment and re-embeds the current snapshot', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      previous: {
+        status: 'success',
+        shortSha: 'abc1234',
+        previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+        updatedAt: '2026-06-04 00:00:00',
+      },
+    });
+    expect(body).toContain('↩️ Previous: ✅ <code>abc1234</code>');
+    expect(body).toContain(
+      '<a href="https://owner-repo-preview-pr-1.surge.sh">open ↗</a>',
+    );
+    expect(body).toContain('2026-06-04 00:00:00 UTC');
+    // the current build is persisted for the next run to read back
+    const recovered = parsePreviousDeployment(body);
+    expect(recovered).toEqual({
+      status: 'building',
+      shortSha: '2eeb596',
+      previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+      updatedAt: '2026-06-05 04:12:33',
+    });
+  });
+});
+
+describe('parsePreviousDeployment', () => {
+  it('returns undefined when there is no embedded snapshot', () => {
+    expect(parsePreviousDeployment(undefined)).toBeUndefined();
+    expect(parsePreviousDeployment('just a normal comment')).toBeUndefined();
+  });
+
+  it('returns undefined for a malformed snapshot', () => {
+    expect(
+      parsePreviousDeployment('<!-- surge-preview-meta:{not json-->'),
+    ).toBeUndefined();
+  });
+
+  it('returns undefined for a structurally invalid snapshot', () => {
+    // valid JSON, but missing/invalid fields must not slip through and render
+    // garbage like `https://undefined`
+    const unknownStatus = encodeDeploymentMeta({
+      // biome-ignore lint/suspicious/noExplicitAny: deliberately invalid input
+      status: 'bogus' as any,
+      shortSha: 'abc1234',
+      previewUrl: 'a.surge.sh',
+      updatedAt: '2026-06-05 04:12:33',
+    });
+    expect(parsePreviousDeployment(unknownStatus)).toBeUndefined();
+
+    const missingFields = `<!-- surge-preview-meta:{"status":"success"}-->`;
+    expect(parsePreviousDeployment(missingFields)).toBeUndefined();
+
+    const emptyPreview = `<!-- surge-preview-meta:{"status":"success","shortSha":"abc1234","previewUrl":"","updatedAt":"x"}-->`;
+    expect(parsePreviousDeployment(emptyPreview)).toBeUndefined();
+  });
+
+  it('round-trips an encoded snapshot', () => {
+    const snapshot = {
+      status: 'success' as const,
+      shortSha: 'abc1234',
+      previewUrl: 'a.surge.sh',
+      updatedAt: '2026-06-05 04:12:33',
+    };
+    expect(parsePreviousDeployment(encodeDeploymentMeta(snapshot))).toEqual(
+      snapshot,
     );
   });
 });
