@@ -1,9 +1,18 @@
 # Surge PR Preview
 
-[![CI status][github-action-image]][github-action-url]
+[![CI status][ci-image]][ci-url]
+[![Marketplace][marketplace-image]][marketplace-url]
+[![Release][release-image]][release-url]
+[![License][license-image]][license-url]
 
-[github-action-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
-[github-action-url]: https://github.com/afc163/surge-preview/actions?query=workflow%3Abuild-test
+[ci-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
+[ci-url]: https://github.com/afc163/surge-preview/actions?query=workflow%3Abuild-test
+[marketplace-image]: https://img.shields.io/badge/marketplace-surge--pr--preview-blue?logo=github
+[marketplace-url]: https://github.com/marketplace/actions/surge-pr-preview
+[release-image]: https://img.shields.io/github/v/release/afc163/surge-preview?sort=semver&logo=github
+[release-url]: https://github.com/afc163/surge-preview/releases
+[license-image]: https://img.shields.io/github/license/afc163/surge-preview
+[license-url]: https://github.com/afc163/surge-preview/blob/main/LICENSE
 
 A GitHub action that preview website in [surge.sh](https://surge.sh/) for your pull requests.
 
