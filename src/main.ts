@@ -8,8 +8,17 @@ let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
 
 async function main() {
+  // Provide a default fail handler immediately so that errors thrown before the
+  // richer `fail` (with PR comment) is assigned are still surfaced, rather than
+  // being silently swallowed by `fail?.()` in the bottom catch — which would
+  // make the action report success despite having crashed.
+  fail = (err: Error) => {
+    core.setFailed(err.message);
+  };
+
   const surgeToken =
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
+  core.setSecret(surgeToken);
   const token = core.getInput('github_token', { required: true });
   const dist = core.getInput('dist');
   const teardown =
@@ -75,13 +84,17 @@ async function main() {
     }
     comment({
       repo: github.context.repo,
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
       number: prNumber,
       message,
       octokit,
       header: job,
     });
   };
+
+  // Default to the workflow run url; upgraded to the check run url once we know
+  // the check run id. Declared before `fail` so it is never referenced in the
+  // temporal dead zone when `fail` is invoked early (e.g. listForRef throws).
+  let buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
 
   fail = (err: Error) => {
     core.info('error message:');
@@ -134,9 +147,9 @@ ${getCommentFooter()}
     checkRunId = checkRun?.id;
   }
 
-  const buildingLogUrl = checkRunId
-    ? `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`
-    : `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/actions/runs/${github.context.runId}`;
+  if (checkRunId) {
+    buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`;
+  }
 
   core.debug(`teardown enabled?: ${teardown}`);
   core.debug(`event action?: ${payload.action}`);
@@ -144,7 +157,6 @@ ${getCommentFooter()}
   if (teardown && prState === 'closed') {
     try {
       core.info(`Teardown: ${url}`);
-      core.setSecret(surgeToken);
       await execSurgeCommand({
         command: ['surge', 'teardown', url, `--token`, surgeToken],
       });
@@ -194,7 +206,6 @@ ${getCommentFooter()}
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
-    core.setSecret(surgeToken);
 
     await execSurgeCommand({
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],

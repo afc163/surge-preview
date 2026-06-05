@@ -27,7 +27,7 @@ export async function comment({
     core.info('no numbers given: skip step');
     return;
   }
-  const prefixedHeader = `: Surge Preview ${header}'`;
+  const prefixedHeader = `: Surge Preview ${header}`;
 
   try {
     const previous = await findPreviousComment(
