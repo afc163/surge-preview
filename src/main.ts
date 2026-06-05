@@ -8,6 +8,14 @@ let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
 
 async function main() {
+  // Provide a default fail handler immediately so that errors thrown before the
+  // richer `fail` (with PR comment) is assigned are still surfaced, rather than
+  // being silently swallowed by `fail?.()` in the bottom catch — which would
+  // make the action report success despite having crashed.
+  fail = (err: Error) => {
+    core.setFailed(err.message);
+  };
+
   const surgeToken =
     core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
   core.setSecret(surgeToken);

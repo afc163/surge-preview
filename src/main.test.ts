@@ -125,4 +125,24 @@ describe('main failure path (TDZ regression)', () => {
       'afc163-surge-preview-build-pr-1.surge.sh',
     );
   });
+
+  it('marks the action as failed when main throws before fail is assigned', async () => {
+    setupPullRequestContext();
+    // @actions/core throws when a required input is missing. This happens at
+    // the very top of main(), long before `fail` is assigned, so the bottom
+    // `main().catch(err => fail?.(err))` must still surface the failure rather
+    // than silently swallowing it via `fail?.()`.
+    getInput.mockImplementation((name: string) => {
+      if (name === 'github_token') {
+        throw new Error('Input required and not supplied: github_token');
+      }
+      return inputs[name] ?? '';
+    });
+
+    await runMain();
+
+    expect(setFailed).toHaveBeenCalledWith(
+      'Input required and not supplied: github_token',
+    );
+  });
 });

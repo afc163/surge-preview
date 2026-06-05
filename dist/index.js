@@ -237,6 +237,13 @@ let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
         var _a, _b, _c, _d, _e, _f, _g, _h;
+        // Provide a default fail handler immediately so that errors thrown before the
+        // richer `fail` (with PR comment) is assigned are still surfaced, rather than
+        // being silently swallowed by `fail?.()` in the bottom catch — which would
+        // make the action report success despite having crashed.
+        fail = (err) => {
+            core.setFailed(err.message);
+        };
         const surgeToken = core.getInput('surge_token') || '6973bdb764f0d5fd07c910de27e2d7d0';
         core.setSecret(surgeToken);
         const token = core.getInput('github_token', { required: true });
