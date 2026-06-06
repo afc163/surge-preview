@@ -87,6 +87,11 @@ export const measureDist = async (dir: string): Promise<DistStats> => {
     for (const entry of entries) {
       const full = join(current, entry.name);
       if (entry.isDirectory()) {
+        // Skip heavy, non-artifact directories so a misconfigured `dist`
+        // (e.g. `.` or empty) doesn't traverse the whole workspace.
+        if (entry.name === 'node_modules' || entry.name === '.git') {
+          continue;
+        }
         await walk(full);
       } else if (entry.isFile()) {
         try {
@@ -112,9 +117,10 @@ export const formatBytes = (bytes: number): string => {
     return '0 B';
   }
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-  const exponent = Math.min(
-    Math.floor(Math.log(bytes) / Math.log(1024)),
-    units.length - 1,
+  // Clamp to [0, last unit] so a sub-1 byte value can't produce units[-1].
+  const exponent = Math.max(
+    0,
+    Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1),
   );
   const value = bytes / 1024 ** exponent;
   // Whole bytes have no decimals; everything else keeps one for readability.
@@ -127,7 +133,12 @@ export const formatBytes = (bytes: number): string => {
  * Returns an empty string when there is nothing meaningful to compare.
  */
 export const formatSizeDiff = (current: number, previous?: number): string => {
-  if (typeof previous !== 'number' || previous < 0) {
+  if (
+    !Number.isFinite(current) ||
+    current < 0 ||
+    typeof previous !== 'number' ||
+    previous < 0
+  ) {
     return '';
   }
   const delta = current - previous;

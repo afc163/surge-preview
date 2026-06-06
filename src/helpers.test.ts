@@ -129,6 +129,15 @@ describe('measureDist', () => {
     fs.writeFileSync(path.join(dir, 'sub', 'b.txt'), 'world!'); // 6 bytes
     expect(await measureDist(dir)).toEqual({ bytes: 11, files: 2 });
   });
+
+  it('skips node_modules and .git directories', async () => {
+    fs.writeFileSync(path.join(dir, 'a.txt'), 'hello'); // 5 bytes, counted
+    fs.mkdirSync(path.join(dir, 'node_modules'));
+    fs.writeFileSync(path.join(dir, 'node_modules', 'big.js'), 'ignored');
+    fs.mkdirSync(path.join(dir, '.git'));
+    fs.writeFileSync(path.join(dir, '.git', 'HEAD'), 'ignored too');
+    expect(await measureDist(dir)).toEqual({ bytes: 5, files: 1 });
+  });
 });
 
 describe('getCommentBody', () => {

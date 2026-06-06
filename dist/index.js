@@ -208,6 +208,11 @@ const measureDist = (dir) => __awaiter(void 0, void 0, void 0, function* () {
         for (const entry of entries) {
             const full = (0, node_path_1.join)(current, entry.name);
             if (entry.isDirectory()) {
+                // Skip heavy, non-artifact directories so a misconfigured `dist`
+                // (e.g. `.` or empty) doesn't traverse the whole workspace.
+                if (entry.name === 'node_modules' || entry.name === '.git') {
+                    continue;
+                }
                 yield walk(full);
             }
             else if (entry.isFile()) {
@@ -234,7 +239,8 @@ const formatBytes = (bytes) => {
         return '0 B';
     }
     const units = ['B', 'KB', 'MB', 'GB', 'TB'];
-    const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    // Clamp to [0, last unit] so a sub-1 byte value can't produce units[-1].
+    const exponent = Math.max(0, Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1));
     const value = bytes / Math.pow(1024, exponent);
     // Whole bytes have no decimals; everything else keeps one for readability.
     const formatted = exponent === 0 ? `${value}` : value.toFixed(1);
@@ -246,7 +252,10 @@ exports.formatBytes = formatBytes;
  * Returns an empty string when there is nothing meaningful to compare.
  */
 const formatSizeDiff = (current, previous) => {
-    if (typeof previous !== 'number' || previous < 0) {
+    if (!Number.isFinite(current) ||
+        current < 0 ||
+        typeof previous !== 'number' ||
+        previous < 0) {
         return '';
     }
     const delta = current - previous;
