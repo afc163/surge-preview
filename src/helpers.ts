@@ -402,15 +402,24 @@ export const getCommentBody = ({
     );
   }
 
+  // Carry the artifact size forward in the snapshot. On a success deploy we
+  // embed the freshly measured size; on the interim building comment there is
+  // no measurement, so we preserve the previous deployment's size instead —
+  // otherwise the building comment would wipe the baseline the next success
+  // comment needs to render a size delta.
+  const snapshotSize = dist
+    ? { bytes: dist.bytes, files: dist.files }
+    : previous?.bytes !== undefined
+      ? { bytes: previous.bytes, files: previous.files }
+      : {};
+
   parts.push(
     encodeDeploymentMeta({
       status,
       shortSha,
       previewUrl,
       updatedAt,
-      // Persist the size so the next run can render a delta. Only recorded when
-      // we actually measured it (success deploys).
-      ...(dist ? { bytes: dist.bytes, files: dist.files } : {}),
+      ...snapshotSize,
     }),
     getCommentFooter(),
   );

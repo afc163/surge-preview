@@ -225,6 +225,36 @@ describe('getCommentBody', () => {
     );
   });
 
+  it('carries the previous size forward through the building comment', () => {
+    // The interim building comment has no measured dist, but it must preserve
+    // the previous deployment's size in the snapshot so the next success
+    // comment can still render a delta (otherwise the baseline is wiped).
+    const buildingBody = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      previous: {
+        status: 'success',
+        shortSha: 'abc1234',
+        previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+        updatedAt: '2026-06-04 00:00:00',
+        bytes: 1024,
+        files: 3,
+      },
+    });
+    const recovered = parsePreviousDeployment(buildingBody);
+    expect(recovered?.bytes).toBe(1024);
+    expect(recovered?.files).toBe(3);
+
+    // And feeding that recovered snapshot into the success comment yields a diff.
+    const successBody = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      dist: { bytes: 2048, files: 4 },
+      previous: recovered,
+    });
+    expect(successBody).toContain('(+1.0 KB ⬆️)');
+  });
+
   it('renders a building card without build time', () => {
     const body = getCommentBody({ ...baseOptions, status: 'building' });
     expect(body).toContain('## ⚡️ Deploying preview…');

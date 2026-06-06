@@ -431,10 +431,20 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         const prevPreview = `<a href="https://${previous.previewUrl}">open ↗</a>`;
         parts.push(`<sub>↩️ Previous: ${badge} <code>${previous.shortSha}</code> · ${previous.previewUrl} (${prevPreview}) · ${previous.updatedAt} UTC</sub>`, '');
     }
+    // Carry the artifact size forward in the snapshot. On a success deploy we
+    // embed the freshly measured size; on the interim building comment there is
+    // no measurement, so we preserve the previous deployment's size instead —
+    // otherwise the building comment would wipe the baseline the next success
+    // comment needs to render a size delta.
+    const snapshotSize = dist
+        ? { bytes: dist.bytes, files: dist.files }
+        : (previous === null || previous === void 0 ? void 0 : previous.bytes) !== undefined
+            ? { bytes: previous.bytes, files: previous.files }
+            : {};
     parts.push((0, exports.encodeDeploymentMeta)(Object.assign({ status,
         shortSha,
         previewUrl,
-        updatedAt }, (dist ? { bytes: dist.bytes, files: dist.files } : {}))), (0, exports.getCommentFooter)());
+        updatedAt }, snapshotSize)), (0, exports.getCommentFooter)());
     return parts.join('\n');
 };
 exports.getCommentBody = getCommentBody;
