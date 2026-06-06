@@ -2,17 +2,25 @@ import { exec } from '@actions/exec';
 
 interface ExecSurgeCommandOptions {
   command: string[];
+  // Optional sink for the command's stdout/stderr, so the caller can fold the
+  // deploy output into its own captured log (used for the failure summary).
+  onOutput?: (chunk: string) => void;
 }
 
 export const execSurgeCommand = async ({
   command,
+  onOutput,
 }: ExecSurgeCommandOptions): Promise<void> => {
   let myOutput = '';
+  const capture = (data: Buffer) => {
+    const text = data.toString();
+    myOutput += text;
+    onOutput?.(text);
+  };
   const options = {
     listeners: {
-      stdout: (stdoutData: Buffer) => {
-        myOutput += stdoutData.toString();
-      },
+      stdout: capture,
+      stderr: capture,
     },
   };
   await exec(`npx`, command, options);

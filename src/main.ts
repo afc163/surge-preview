@@ -211,11 +211,14 @@ async function main() {
     // can't grow it without bound (we only ever show the tail anyway).
     const decoder = new TextDecoder('utf-8');
     const MAX_LOG = 100_000;
-    const appendLog = (data: Buffer) => {
-      capturedLog += decoder.decode(data, { stream: true });
+    const appendText = (text: string) => {
+      capturedLog += text;
       if (capturedLog.length > MAX_LOG) {
         capturedLog = capturedLog.slice(-MAX_LOG / 2);
       }
+    };
+    const appendLog = (data: Buffer) => {
+      appendText(decoder.decode(data, { stream: true }));
     };
     const captureOptions = {
       listeners: {
@@ -237,8 +240,13 @@ async function main() {
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
 
+    // Reset the captured log before the deploy step so that, if the deploy
+    // fails, the failure summary shows the surge output (the actual error)
+    // rather than the now-irrelevant successful build log.
+    capturedLog = '';
     await execSurgeCommand({
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
+      onOutput: appendText,
     });
 
     commentIfNotForkedRepo(

@@ -152,13 +152,17 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatLogSummary = exports.tailLog = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
-const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
+const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, onOutput, }) {
     let myOutput = '';
+    const capture = (data) => {
+        const text = data.toString();
+        myOutput += text;
+        onOutput === null || onOutput === void 0 ? void 0 : onOutput(text);
+    };
     const options = {
         listeners: {
-            stdout: (stdoutData) => {
-                myOutput += stdoutData.toString();
-            },
+            stdout: capture,
+            stderr: capture,
         },
     };
     yield (0, exec_1.exec)(`npx`, command, options);
@@ -623,11 +627,14 @@ function main() {
             // can't grow it without bound (we only ever show the tail anyway).
             const decoder = new TextDecoder('utf-8');
             const MAX_LOG = 100000;
-            const appendLog = (data) => {
-                capturedLog += decoder.decode(data, { stream: true });
+            const appendText = (text) => {
+                capturedLog += text;
                 if (capturedLog.length > MAX_LOG) {
                     capturedLog = capturedLog.slice(-MAX_LOG / 2);
                 }
+            };
+            const appendLog = (data) => {
+                appendText(decoder.decode(data, { stream: true }));
             };
             const captureOptions = {
                 listeners: {
@@ -649,8 +656,13 @@ function main() {
             const duration = (Date.now() - startTime) / 1000;
             core.info(`Build time: ${duration} seconds`);
             core.info(`Deploy to ${url}`);
+            // Reset the captured log before the deploy step so that, if the deploy
+            // fails, the failure summary shows the surge output (the actual error)
+            // rather than the now-irrelevant successful build log.
+            capturedLog = '';
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
+                onOutput: appendText,
             });
             commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
                 status: 'success',

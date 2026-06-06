@@ -310,4 +310,18 @@ describe('execSurgeCommand', () => {
       execSurgeCommand({ command: ['surge'] }),
     ).resolves.toBeUndefined();
   });
+
+  it('forwards stdout and stderr to onOutput', async () => {
+    mockedExec.mockImplementation(async (_cmd, _args, options) => {
+      options?.listeners?.stdout?.(Buffer.from('Success out '));
+      options?.listeners?.stderr?.(Buffer.from('err'));
+      return 0;
+    });
+    const chunks: string[] = [];
+    await execSurgeCommand({
+      command: ['surge'],
+      onOutput: (c) => chunks.push(c),
+    });
+    expect(chunks.join('')).toBe('Success out err');
+  });
 });
