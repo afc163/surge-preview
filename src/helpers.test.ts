@@ -138,7 +138,7 @@ describe('getCommentBody', () => {
     });
     expect(body).toContain('🖼️ Preview screenshot');
     expect(body).toContain(
-      'src="https://image.thum.io/get/width/600/https://owner-repo-preview-pr-1.surge.sh"',
+      'src="https://image.thum.io/get/width/600/https://owner-repo-preview-pr-1.surge.sh?v=2eeb596abcdef1234567890"',
     );
   });
 

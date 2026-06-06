@@ -69,13 +69,18 @@ export const formatQRCode = ({
 export const formatScreenshot = ({
   previewUrl,
   width = 600,
+  gitCommitSha,
 }: {
   // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
   previewUrl: string;
   width?: number;
+  // Appended as a cache buster so thum.io re-captures on every new commit
+  // (the preview URL is stable across a PR's commits).
+  gitCommitSha?: string;
 }) => {
+  const cacheBuster = gitCommitSha ? `?v=${gitCommitSha}` : '';
   const target = `https://${previewUrl}`;
-  const src = `https://image.thum.io/get/width/${width}/${target}`;
+  const src = `https://image.thum.io/get/width/${width}/${target}${cacheBuster}`;
   return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
 };
 
@@ -308,7 +313,7 @@ export const getCommentBody = ({
     parts.push(
       '<details open><summary>🖼️ Preview screenshot</summary>',
       '',
-      formatScreenshot({ previewUrl }),
+      formatScreenshot({ previewUrl, gitCommitSha }),
       '',
       '</details>',
       '',

@@ -193,9 +193,10 @@ exports.formatQRCode = formatQRCode;
  * convenience; if the service is unreachable the image simply fails to load
  * and the rest of the comment is unaffected.
  */
-const formatScreenshot = ({ previewUrl, width = 600, }) => {
+const formatScreenshot = ({ previewUrl, width = 600, gitCommitSha, }) => {
+    const cacheBuster = gitCommitSha ? `?v=${gitCommitSha}` : '';
     const target = `https://${previewUrl}`;
-    const src = `https://image.thum.io/get/width/${width}/${target}`;
+    const src = `https://image.thum.io/get/width/${width}/${target}${cacheBuster}`;
     return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
 };
 exports.formatScreenshot = formatScreenshot;
@@ -347,7 +348,7 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     // On success, optionally embed a screenshot of the live preview's landing
     // page so reviewers see the change without opening the link.
     if (status === 'success' && screenshot) {
-        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
+        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl, gitCommitSha }), '', '</details>', '');
     }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
