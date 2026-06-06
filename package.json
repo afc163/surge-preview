@@ -40,6 +40,6 @@
     "typescript": "^5.0.0"
   },
   "lint-staged": {
-    "*": "biome check --write"
+    "*": "biome check --write --files-ignore-unknown=true --no-errors-on-unmatched"
   }
 }
