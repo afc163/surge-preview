@@ -110,6 +110,11 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
+  // Accumulates build/deploy output so a failure comment can show the tail of
+  // the log. Kept in the main scope so `fail` can read whatever was captured
+  // before the error.
+  let capturedLog = '';
+
   fail = (err: Error) => {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
@@ -120,6 +125,8 @@ async function main() {
         gitCommitSha: commitSha,
         commitUrl,
         buildingLogUrl,
+        // Prefer the captured command output; fall back to the error message.
+        logTail: capturedLog || err.message,
       }),
     );
     if (failOnError) {
@@ -198,14 +205,25 @@ async function main() {
 
   const startTime = Date.now();
   try {
+    // Capture stdout/stderr of each command so a failure can show the log tail.
+    const captureOptions = {
+      listeners: {
+        stdout: (data: Buffer) => {
+          capturedLog += data.toString();
+        },
+        stderr: (data: Buffer) => {
+          capturedLog += data.toString();
+        },
+      },
+    };
     if (!core.getInput('build')) {
-      await exec(`npm install`);
-      await exec(`npm run build`);
+      await exec(`npm install`, [], captureOptions);
+      await exec(`npm run build`, [], captureOptions);
     } else {
       const buildCommands = core.getInput('build').split('\n');
       for (const command of buildCommands) {
         core.info(`RUN: ${command}`);
-        await exec(command);
+        await exec(command, [], captureOptions);
       }
     }
     const duration = (Date.now() - startTime) / 1000;

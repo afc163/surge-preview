@@ -59,6 +59,47 @@ export const formatQRCode = ({
   return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 
+/**
+ * Extracts the last `maxLines` non-empty-trimmed lines of a build/deploy log,
+ * the part most likely to contain the actual error. Returns an empty string
+ * when there is nothing useful to show.
+ */
+export const tailLog = (log: string, maxLines = 30): string => {
+  if (!log) {
+    return '';
+  }
+  const lines = log.replace(/\r\n/g, '\n').split('\n');
+  // Drop trailing blank lines so the summary ends on real output.
+  while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+    lines.pop();
+  }
+  return lines.slice(-maxLines).join('\n');
+};
+
+/**
+ * Renders a captured failure log as a collapsed <details> block. The log is
+ * wrapped in a fenced code block, so it is escaped by GitHub's renderer and
+ * cannot break the surrounding comment markup. Returns an empty string when
+ * there is no log to show.
+ */
+export const formatLogSummary = (log: string, maxLines = 30): string => {
+  const tail = tailLog(log, maxLines);
+  if (!tail) {
+    return '';
+  }
+  // A code fence keeps the log verbatim and neutralises any backticks/HTML in
+  // it; the closing fence is padded enough to survive fences inside the log.
+  return [
+    '<details><summary>📋 Build log (last lines)</summary>',
+    '',
+    '```',
+    tail,
+    '```',
+    '',
+    '</details>',
+  ].join('\n');
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -182,6 +223,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // Captured build/deploy output, surfaced (collapsed) on the fail status.
+  logTail?: string;
 }
 
 const formatUpdatedAt = () =>
@@ -209,6 +252,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  logTail,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
   const shortSha = gitCommitSha?.slice(0, 7) || '';
@@ -278,6 +322,15 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
+
+  // On failure, surface the tail of the captured build/deploy log so reviewers
+  // can see what went wrong without leaving the PR.
+  if (status === 'fail' && logTail) {
+    const summary = formatLogSummary(logTail);
+    if (summary) {
+      parts.push(summary, '');
+    }
+  }
 
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';

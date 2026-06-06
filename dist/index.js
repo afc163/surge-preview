@@ -150,7 +150,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatLogSummary = exports.tailLog = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -186,6 +186,47 @@ const formatQRCode = ({ previewUrl, size = 120, }) => {
     return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 exports.formatQRCode = formatQRCode;
+/**
+ * Extracts the last `maxLines` non-empty-trimmed lines of a build/deploy log,
+ * the part most likely to contain the actual error. Returns an empty string
+ * when there is nothing useful to show.
+ */
+const tailLog = (log, maxLines = 30) => {
+    if (!log) {
+        return '';
+    }
+    const lines = log.replace(/\r\n/g, '\n').split('\n');
+    // Drop trailing blank lines so the summary ends on real output.
+    while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+        lines.pop();
+    }
+    return lines.slice(-maxLines).join('\n');
+};
+exports.tailLog = tailLog;
+/**
+ * Renders a captured failure log as a collapsed <details> block. The log is
+ * wrapped in a fenced code block, so it is escaped by GitHub's renderer and
+ * cannot break the surrounding comment markup. Returns an empty string when
+ * there is no log to show.
+ */
+const formatLogSummary = (log, maxLines = 30) => {
+    const tail = (0, exports.tailLog)(log, maxLines);
+    if (!tail) {
+        return '';
+    }
+    // A code fence keeps the log verbatim and neutralises any backticks/HTML in
+    // it; the closing fence is padded enough to survive fences inside the log.
+    return [
+        '<details><summary>📋 Build log (last lines)</summary>',
+        '',
+        '```',
+        tail,
+        '```',
+        '',
+        '</details>',
+    ].join('\n');
+};
+exports.formatLogSummary = formatLogSummary;
 // Default screenshots hosted on GitHub user-images. Kept identical to the
 // previous inline URLs so existing behaviour is preserved.
 const STATUS_META = {
@@ -275,7 +316,7 @@ const PREVIOUS_BADGE = {
  * details, so the header stays meaningful. A previous deployment, when
  * provided, is surfaced below the card and re-embedded for the next run.
  */
-const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, }) => {
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, logTail, }) => {
     var _a;
     const meta = STATUS_META[status];
     const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
@@ -331,6 +372,14 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         '</table>',
     ].join('\n');
     const parts = [meta.title, '', table, ''];
+    // On failure, surface the tail of the captured build/deploy log so reviewers
+    // can see what went wrong without leaving the PR.
+    if (status === 'fail' && logTail) {
+        const summary = (0, exports.formatLogSummary)(logTail);
+        if (summary) {
+            parts.push(summary, '');
+        }
+    }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
         // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
@@ -488,6 +537,10 @@ function main() {
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+        // Accumulates build/deploy output so a failure comment can show the tail of
+        // the log. Kept in the main scope so `fail` can read whatever was captured
+        // before the error.
+        let capturedLog = '';
         fail = (err) => {
             core.info('error message:');
             core.info(JSON.stringify(err, null, 2));
@@ -497,6 +550,8 @@ function main() {
                 gitCommitSha: commitSha,
                 commitUrl,
                 buildingLogUrl,
+                // Prefer the captured command output; fall back to the error message.
+                logTail: capturedLog || err.message,
             }));
             if (failOnError) {
                 core.setFailed(err.message);
@@ -562,15 +617,26 @@ function main() {
         }));
         const startTime = Date.now();
         try {
+            // Capture stdout/stderr of each command so a failure can show the log tail.
+            const captureOptions = {
+                listeners: {
+                    stdout: (data) => {
+                        capturedLog += data.toString();
+                    },
+                    stderr: (data) => {
+                        capturedLog += data.toString();
+                    },
+                },
+            };
             if (!core.getInput('build')) {
-                yield (0, exec_1.exec)(`npm install`);
-                yield (0, exec_1.exec)(`npm run build`);
+                yield (0, exec_1.exec)(`npm install`, [], captureOptions);
+                yield (0, exec_1.exec)(`npm run build`, [], captureOptions);
             }
             else {
                 const buildCommands = core.getInput('build').split('\n');
                 for (const command of buildCommands) {
                     core.info(`RUN: ${command}`);
-                    yield (0, exec_1.exec)(command);
+                    yield (0, exec_1.exec)(command, [], captureOptions);
                 }
             }
             const duration = (Date.now() - startTime) / 1000;

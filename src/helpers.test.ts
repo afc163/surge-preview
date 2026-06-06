@@ -3,10 +3,12 @@ import {
   encodeDeploymentMeta,
   execSurgeCommand,
   formatImage,
+  formatLogSummary,
   formatQRCode,
   getCommentBody,
   getCommentFooter,
   parsePreviousDeployment,
+  tailLog,
 } from './helpers';
 
 jest.mock('@actions/exec');
@@ -58,6 +60,37 @@ describe('formatQRCode', () => {
     const html = formatQRCode({ previewUrl: 'a-b-pr-1.surge.sh', size: 200 });
     expect(html).toContain('width="200"');
     expect(html).toContain('size=200x200');
+  });
+});
+
+describe('tailLog', () => {
+  it('returns an empty string for empty input', () => {
+    expect(tailLog('')).toBe('');
+  });
+
+  it('keeps only the last N lines', () => {
+    const log = ['1', '2', '3', '4', '5'].join('\n');
+    expect(tailLog(log, 2)).toBe('4\n5');
+  });
+
+  it('trims trailing blank lines and normalises CRLF', () => {
+    expect(tailLog('a\r\nb\r\n\r\n\r\n', 10)).toBe('a\nb');
+  });
+});
+
+describe('formatLogSummary', () => {
+  it('returns an empty string when there is no log', () => {
+    expect(formatLogSummary('')).toBe('');
+    expect(formatLogSummary('\n\n')).toBe('');
+  });
+
+  it('wraps the log tail in a collapsed, fenced details block', () => {
+    const out = formatLogSummary('error line 1\nerror line 2', 10);
+    expect(out).toContain(
+      '<details><summary>📋 Build log (last lines)</summary>',
+    );
+    expect(out).toContain('```\nerror line 1\nerror line 2\n```');
+    expect(out).toContain('</details>');
   });
 });
 
@@ -128,6 +161,27 @@ describe('getCommentBody', () => {
     const body = getCommentBody({ ...baseOptions, status: 'fail' });
     expect(body).toContain('## ❌ Deploy failed');
     expect(body).toContain('<s>https://owner-repo-preview-pr-1.surge.sh</s>');
+  });
+
+  it('includes a collapsed build log on failure when a log is provided', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'fail',
+      logTail: 'npm ERR! something broke\nnpm ERR! see log',
+    });
+    expect(body).toContain(
+      '<details><summary>📋 Build log (last lines)</summary>',
+    );
+    expect(body).toContain('npm ERR! something broke');
+  });
+
+  it('omits the build log block on success even if a log is provided', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      logTail: 'irrelevant output',
+    });
+    expect(body).not.toContain('📋 Build log');
   });
 
   it('renders a destroy card', () => {
