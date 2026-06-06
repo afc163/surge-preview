@@ -239,6 +239,14 @@ export const getCommentBody = ({
     value: `<a href="${buildingLogUrl}">View logs</a>`,
   });
   lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
+  // Only the live preview (success) has a reachable URL worth scanning, so the
+  // QR code rides along as a full-width row inside the card itself rather than
+  // a separate collapsed block.
+  if (status === 'success') {
+    lines.push({
+      full: `<div align="center">${formatQRCode({ previewUrl, size: 100 })}<br><sub>📱 Scan to open on mobile</sub></div>`,
+    });
+  }
 
   const image = formatImage({
     buildingLogUrl,
@@ -269,20 +277,6 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
-
-  // Only the live preview (success) is worth scanning; other states have no
-  // reachable URL. Tuck the QR code into a collapsed <details> so it never
-  // dominates the comment but is one click away on a phone.
-  if (status === 'success') {
-    parts.push(
-      '<details><summary>📱 Scan to open on mobile</summary>',
-      '',
-      formatQRCode({ previewUrl }),
-      '',
-      '</details>',
-      '',
-    );
-  }
 
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';

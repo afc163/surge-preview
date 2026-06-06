@@ -99,15 +99,17 @@ describe('getCommentBody', () => {
     expect(body).toContain(
       '<td>🕐 Updated</td><td><code>2026-06-05 04:12:33</code> UTC</td>',
     );
-    // screenshot lives inside the table and spans the rows via rowspan
+    // screenshot lives inside the table and spans the rows via rowspan; the
+    // success card has an extra QR row, so the screenshot spans 7 rows
     expect(body).toContain('<table>');
-    expect(body).toContain('rowspan="6"');
+    expect(body).toContain('rowspan="7"');
     expect(body).toContain('width="200"');
     expect(body).toContain('alt="PR preview ✅ Ready"');
-    // a scannable QR code to the live preview is offered for mobile reviewers
+    // a scannable QR code to the live preview is rendered inside the card for
+    // mobile reviewers
     expect(body).toContain('📱 Scan to open on mobile');
     expect(body).toContain(
-      'src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"',
+      'src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"',
     );
   });
 

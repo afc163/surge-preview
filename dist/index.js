@@ -298,6 +298,14 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         value: `<a href="${buildingLogUrl}">View logs</a>`,
     });
     lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
+    // Only the live preview (success) has a reachable URL worth scanning, so the
+    // QR code rides along as a full-width row inside the card itself rather than
+    // a separate collapsed block.
+    if (status === 'success') {
+        lines.push({
+            full: `<div align="center">${(0, exports.formatQRCode)({ previewUrl, size: 100 })}<br><sub>📱 Scan to open on mobile</sub></div>`,
+        });
+    }
     const image = (0, exports.formatImage)({
         buildingLogUrl,
         imageUrl: imageUrl !== null && imageUrl !== void 0 ? imageUrl : meta.imageUrl,
@@ -322,12 +330,6 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         '</table>',
     ].join('\n');
     const parts = [meta.title, '', table, ''];
-    // Only the live preview (success) is worth scanning; other states have no
-    // reachable URL. Tuck the QR code into a collapsed <details> so it never
-    // dominates the comment but is one click away on a phone.
-    if (status === 'success') {
-        parts.push('<details><summary>📱 Scan to open on mobile</summary>', '', (0, exports.formatQRCode)({ previewUrl }), '', '</details>', '');
-    }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
         // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
