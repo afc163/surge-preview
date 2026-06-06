@@ -4,6 +4,7 @@ import {
   execSurgeCommand,
   formatImage,
   formatQRCode,
+  formatScreenshot,
   getCommentBody,
   getCommentFooter,
   parsePreviousDeployment,
@@ -61,6 +62,23 @@ describe('formatQRCode', () => {
   });
 });
 
+describe('formatScreenshot', () => {
+  it('renders a thumbnail that links to the preview via thum.io', () => {
+    expect(formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' })).toBe(
+      '<a href="https://a-b-pr-1.surge.sh"><img width="600" alt="Preview screenshot" src="https://image.thum.io/get/width/600/https://a-b-pr-1.surge.sh"></a>',
+    );
+  });
+
+  it('honours a custom width', () => {
+    const html = formatScreenshot({
+      previewUrl: 'a-b-pr-1.surge.sh',
+      width: 800,
+    });
+    expect(html).toContain('width="800"');
+    expect(html).toContain('/width/800/');
+  });
+});
+
 describe('getCommentBody', () => {
   const baseOptions = {
     previewUrl: 'owner-repo-preview-pr-1.surge.sh',
@@ -110,6 +128,32 @@ describe('getCommentBody', () => {
     expect(body).toContain(
       '<td>📱 Mobile</td><td><a href="https://owner-repo-preview-pr-1.surge.sh"><img width="100" alt="Scan to open preview on mobile" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"></a></td>',
     );
+  });
+
+  it('embeds a screenshot on success when screenshot is enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      screenshot: true,
+    });
+    expect(body).toContain('🖼️ Preview screenshot');
+    expect(body).toContain(
+      'src="https://image.thum.io/get/width/600/https://owner-repo-preview-pr-1.surge.sh"',
+    );
+  });
+
+  it('omits the screenshot when screenshot is not enabled', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'success' });
+    expect(body).not.toContain('🖼️ Preview screenshot');
+  });
+
+  it('omits the screenshot on non-success statuses even when enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      screenshot: true,
+    });
+    expect(body).not.toContain('🖼️ Preview screenshot');
   });
 
   it('renders a building card without build time', () => {
