@@ -1,3 +1,5 @@
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import { exec } from '@actions/exec';
 
 interface ExecSurgeCommandOptions {
@@ -59,6 +61,84 @@ export const formatQRCode = ({
   return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 
+// Aggregate size of a built site, used for the artifact size report.
+export interface DistStats {
+  bytes: number;
+  files: number;
+}
+
+/**
+ * Recursively measures the total byte size and file count of a directory.
+ * Symlinks are not followed and unreadable entries are skipped so a single
+ * odd file can never crash the whole report. Returns zeroes when the directory
+ * is missing or cannot be read.
+ */
+export const measureDist = async (dir: string): Promise<DistStats> => {
+  let bytes = 0;
+  let files = 0;
+
+  const walk = async (current: string): Promise<void> => {
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        await walk(full);
+      } else if (entry.isFile()) {
+        try {
+          const info = await stat(full);
+          bytes += info.size;
+          files += 1;
+        } catch {
+          // Skip entries we cannot stat (e.g. broken symlinks).
+        }
+      }
+    }
+  };
+
+  await walk(dir);
+  return { bytes, files };
+};
+
+/**
+ * Formats a byte count into a compact human-readable string, e.g. `1.2 MB`.
+ */
+export const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 B';
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const exponent = Math.min(
+    Math.floor(Math.log(bytes) / Math.log(1024)),
+    units.length - 1,
+  );
+  const value = bytes / 1024 ** exponent;
+  // Whole bytes have no decimals; everything else keeps one for readability.
+  const formatted = exponent === 0 ? `${value}` : value.toFixed(1);
+  return `${formatted} ${units[exponent]}`;
+};
+
+/**
+ * Renders the size delta against a previous deployment, e.g. `(+1.2 KB ⬆️)`.
+ * Returns an empty string when there is nothing meaningful to compare.
+ */
+export const formatSizeDiff = (current: number, previous?: number): string => {
+  if (typeof previous !== 'number' || previous < 0) {
+    return '';
+  }
+  const delta = current - previous;
+  if (delta === 0) {
+    return ' (no change)';
+  }
+  const arrow = delta > 0 ? '⬆️' : '⬇️';
+  const sign = delta > 0 ? '+' : '-';
+  return ` (${sign}${formatBytes(Math.abs(delta))} ${arrow})`;
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -109,6 +189,11 @@ export interface PreviousDeployment {
   shortSha: string;
   previewUrl: string;
   updatedAt: string;
+  // Built artifact size in bytes, carried forward so the next run can show a
+  // size delta. Optional for backwards compatibility with older snapshots.
+  bytes?: number;
+  // Built artifact file count, recorded alongside `bytes`.
+  files?: number;
 }
 
 const META_PREFIX = '<!-- surge-preview-meta:';
@@ -132,12 +217,16 @@ const isPreviousDeployment = (value: unknown): value is PreviousDeployment => {
     return false;
   }
   const v = value as Record<string, unknown>;
+  const sizeIsValid = (n: unknown): boolean =>
+    n === undefined || (typeof n === 'number' && Number.isFinite(n) && n >= 0);
   return (
     typeof v.status === 'string' &&
     v.status in STATUS_META &&
     isNonEmptyString(v.shortSha) &&
     isNonEmptyString(v.previewUrl) &&
-    isNonEmptyString(v.updatedAt)
+    isNonEmptyString(v.updatedAt) &&
+    sizeIsValid(v.bytes) &&
+    sizeIsValid(v.files)
   );
 };
 
@@ -182,6 +271,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // Measured size of the built artifact, shown (with a delta) on success.
+  dist?: DistStats;
 }
 
 const formatUpdatedAt = () =>
@@ -209,6 +300,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  dist,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
   const shortSha = gitCommitSha?.slice(0, 7) || '';
@@ -233,6 +325,15 @@ export const getCommentBody = ({
   }
   if (status === 'success' && typeof duration === 'number') {
     lines.push({ label: '⏱️ Build time', value: `<code>${duration}s</code>` });
+  }
+  // Report the built artifact size and, when a previous size is known, the
+  // delta against it — a cheap regression signal right in the comment.
+  if (status === 'success' && dist) {
+    const diff = formatSizeDiff(dist.bytes, previous?.bytes);
+    lines.push({
+      label: '📦 Size',
+      value: `<code>${formatBytes(dist.bytes)}</code>${diff} · ${dist.files} files`,
+    });
   }
   lines.push({
     label: '🪵 Logs',
@@ -291,7 +392,15 @@ export const getCommentBody = ({
   }
 
   parts.push(
-    encodeDeploymentMeta({ status, shortSha, previewUrl, updatedAt }),
+    encodeDeploymentMeta({
+      status,
+      shortSha,
+      previewUrl,
+      updatedAt,
+      // Persist the size so the next run can render a delta. Only recorded when
+      // we actually measured it (success deploys).
+      ...(dist ? { bytes: dist.bytes, files: dist.files } : {}),
+    }),
     getCommentFooter(),
   );
 

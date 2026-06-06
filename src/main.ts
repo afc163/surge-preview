@@ -5,6 +5,7 @@ import { comment } from './commentToPullRequest';
 import {
   execSurgeCommand,
   getCommentBody,
+  measureDist,
   parsePreviousDeployment,
 } from './helpers';
 
@@ -216,7 +217,14 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
-    commentIfNotForkedRepo(
+    // Measure the deployed artifact so the comment can report its size and,
+    // by reading the previous snapshot from the existing comment, a delta.
+    const distStats = await measureDist(`./${dist}`);
+    core.info(
+      `Artifact size: ${distStats.bytes} bytes, ${distStats.files} files`,
+    );
+
+    commentIfNotForkedRepo((previousBody) =>
       getCommentBody({
         status: 'success',
         previewUrl: url,
@@ -224,6 +232,8 @@ async function main() {
         commitUrl,
         buildingLogUrl,
         duration,
+        dist: distStats,
+        previous: parsePreviousDeployment(previousBody),
       }),
     );
   } catch (err) {
