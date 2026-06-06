@@ -1,4 +1,8 @@
-# Surge PR Preview
+<div align="center">
+
+# 🔂 Surge PR Preview
+
+**A GitHub Action that deploys a live preview of your website to [surge.sh](https://surge.sh/) for every pull request.**
 
 [![CI status][ci-image]][ci-url]
 [![Marketplace][marketplace-image]][marketplace-url]
@@ -14,20 +18,32 @@
 [license-image]: https://img.shields.io/github/license/afc163/surge-preview
 [license-url]: https://github.com/afc163/surge-preview/blob/main/LICENSE
 
-A GitHub action that preview website in [surge.sh](https://surge.sh/) for your pull requests.
+</div>
 
-<img width="800" alt="image" src="https://user-images.githubusercontent.com/507615/90243810-2230b480-de62-11ea-9a2c-9e869a2067dd.png">
+<p align="center">
+  <img width="800" alt="PR preview comment" src="https://user-images.githubusercontent.com/507615/90243810-2230b480-de62-11ea-9a2c-9e869a2067dd.png">
+  <img width="800" alt="Preview website" src="https://user-images.githubusercontent.com/507615/91127543-0be3ed80-e6d9-11ea-897f-977c346bbc77.png">
+</p>
 
-<img width="800" alt="image" src="https://user-images.githubusercontent.com/507615/91127543-0be3ed80-e6d9-11ea-897f-977c346bbc77.png">
+## ✨ Why surge-preview?
 
-### Pros
+Compared to Netlify / Vercel:
 
-Compare to Netlify/Vercel?
+- 🆓 **It is free.**
+- 🧩 **It supports multiple preview jobs.**
 
-- It is **free**.
-- It supports multiple preview jobs.
+## 📖 Table of Contents
 
-### Usage
+- [Usage](#-usage)
+  - [Multiple Jobs](#multiple-jobs)
+  - [Teardown](#teardown)
+  - [PRs from Forked Repositories](#-prs-from-forked-repositories)
+- [Inputs](#-inputs)
+- [Outputs](#-outputs)
+- [Who is using it?](#-who-is-using-it)
+- [Thanks to](#-thanks-to)
+
+## 🚀 Usage
 
 Add a workflow (`.github/workflows/preview.yml`):
 
@@ -57,7 +73,7 @@ jobs:
 
 The preview website url will be `https://{{repository.owner}}-{{repository.name}}-{{job.name}}-pr-{{pr.number}}.surge.sh`.
 
-#### Multiple Jobs
+### Multiple Jobs
 
 ```yaml
 name: 🔂 Surge PR Preview
@@ -99,7 +115,7 @@ The preview website urls will be:
 
 ### Teardown
 
-When a pull request is closed and teardown is set to 'true', then the surge instance will be destroyed.
+When a pull request is closed and `teardown` is set to `'true'`, the surge instance will be destroyed.
 
 ```yaml
 name: 🔂 Surge PR Preview
@@ -127,38 +143,30 @@ jobs:
             npm run build
 ```
 
+## 🔐 PRs from Forked Repositories
 
-### Usage to deal with PRs created from forked repositories
+When someone creates a PR from a forked repository, there is a security challenge: workflows triggered by `pull_request` events do not have access to your repository secrets (like your surge token) for security reasons.
 
-When someone creates a PR from a forked repository, there is a security challenge: workflows triggered by `pull_request` events do not have access to your to repository secrets (like your surge token) for security reasons.
+> [!WARNING]
+> **Why this is a problem:** Without access to the surge token, the preview deployment will fail.
 
-**Why this is a problem:** Without access to the surge token, the preview deployment will fail.
+> [!CAUTION]
+> **Why not use `pull_request_target`?** While this event does provide access to secrets, it executes code from the PR branch with your secrets, creating a security risk. Attackers could potentially steal your secrets by submitting malicious PRs.
+>
+> Resources:
+> - https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
+> - https://github.com/afc163/surge-preview/commit/4931cbc38d650f631f91974da3ccd4809c88aa1b and https://github.com/afc163/surge-preview/issues/99
 
-**Why not use `pull_request_target`?** While this event does provide access to secrets, it executes code from the PR branch with your secrets, creating a security risk. Attackers could potentially steal your secrets by submitting malicious PRs.
-Resources:
-- https://securitylab.github.com/resources/github-actions-preventing-pwn-requests/
-- https://github.com/afc163/surge-preview/commit/4931cbc38d650f631f91974da3ccd4809c88aa1b and https://github.com/afc163/surge-preview/issues/99
-
-
-**Solution: Use a three-workflow Approach**
+### Solution: Use a three-workflow approach
 
 This approach separates the build and deployment steps for improved security:
 
-1. **Build workflow**: Builds the site without needing secrets
-2. **Deploy workflow**: Deploys the pre-built site using your secrets
-3. **Teardown workflow**: Removes the preview when a PR is closed
+1. **Build workflow** — builds the site without needing secrets, then saves it as an artifact.
+2. **Deploy workflow** — retrieves the artifact and deploys the pre-built site using your secrets.
+3. **Teardown workflow** — removes the preview when a PR is closed.
 
-#### How it works
-
-1. First workflow builds the site and saves it as an artifact
-2. Second workflow retrieves the artifact and deploys it to Surge
-3. Third workflow handles cleanup when PRs are closed
-
-#### Example Workflows
-
-Here is an example of how to set up these workflows in your repository:
-
-**Build workflow** (triggered by `pull_request`):
+<details>
+<summary><b>Build workflow</b> (triggered by <code>pull_request</code>)</summary>
 
 ```yaml
 name: Surge PR Preview - Build Stage
@@ -189,7 +197,10 @@ jobs:
           path: site/
 ```
 
-**Deploy workflow** (triggered by `workflow_run`, when the build workflow completes):
+</details>
+
+<details>
+<summary><b>Deploy workflow</b> (triggered by <code>workflow_run</code>, when the build workflow completes)</summary>
 
 ```yaml
 name: Surge PR Preview - Deploy Stage
@@ -231,7 +242,10 @@ jobs:
           teardown: false # Teardown is handled by the separate workflow
 ```
 
-**Teardown workflow** (triggered when a PR is closed):
+</details>
+
+<details>
+<summary><b>Teardown workflow</b> (triggered when a PR is closed)</summary>
 
 ```yaml
 name: Surge PR Preview - Teardown Stage
@@ -257,30 +271,28 @@ jobs:
           build: echo "Cleaning up preview" 
 ```
 
+</details>
 
-#### Troubleshooting
+### Troubleshooting
 
 When running the workflow triggered by `workflow_run` event, the surge-preview action retrieves the number of the Pull Request associated with the workflow run by doing API calls.
 
 Occasionally, the API call may hit rate limits, as the search API can use many calls internally. In this case, the error is caught and a warning is logged. Re-running the workflow should resolve the issue.
 
-As a workaround, you can use a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#about-personal-access-tokens) instead of the GITHUB_TOKEN: this PAT has a higher rate limit errors, so the API calls are more likely to succeed.
+> [!TIP]
+> As a workaround, you can use a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens#about-personal-access-tokens) instead of the `GITHUB_TOKEN`: a PAT has higher rate limits, so the API calls are more likely to succeed.
+>
+> **Note**: Using a PAT as the `github_token` input has a side effect: the PR comment created by the action will be created by the account to which the PAT belongs. When using `GITHUB_TOKEN`, the PR comments are created by the GitHub Actions bot.
 
-**Note**: Using a PAT as github_token input of the surge-preview action has a side effect: the PR comment created by the action will be created by the account to which the PAT belongs.
-When using GITHUB_TOKEN, the PR comments are created by the GitHub Actions bot.
-
-
-#### Limitations
+### Limitations
 
 In some situations, it is hard to know if the surge deployment has been done.
 
-When a workflow is triggered by `workflow_run`, it does not appear in the PR checks, so you cannot see whether the workflow has run or if it has failed.
-By default, there is no status on the commit. It is possible to add this manually in the workflow, for example by using [set-commit-status-action](https://github.com/myrotvorets/set-commit-status-action).
+When a workflow is triggered by `workflow_run`, it does not appear in the PR checks, so you cannot see whether the workflow has run or if it has failed. By default, there is no status on the commit. It is possible to add this manually in the workflow, for example by using [set-commit-status-action](https://github.com/myrotvorets/set-commit-status-action).
 
 However, when the workflow runs, the usual comment is updated by the `surge-preview` action to indicate whether the deployment is in progress or if the Surge deployment succeeded or failed.
 
-
-### Inputs
+## ⚙️ Inputs
 
 | Parameter       | Description                                                                                                                       | Default                                                                                                                                  |
 |-----------------|-----------------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------------------------------------------------------------------------------|
@@ -291,32 +303,32 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
 
-### Outputs
+## 📤 Outputs
 
-- `preview_url`: The url for the related PR preview
+- `preview_url`: The url for the related PR preview.
 
-### Who are using it?
+## 💝 Who is using it?
 
-- https://github.com/ant-design/ant-design-pro
-- https://github.com/ant-design/pro-components
-- https://github.com/antvis/antvis.github.io
-- https://github.com/antvis/gatsby-theme-antv
-- https://github.com/antvis/g2
-- https://github.com/antvis/g2plot
-- https://github.com/antvis/g6
-- https://github.com/antvis/x6
-- https://github.com/umijs/dumi
-- https://github.com/alibaba/hooks
-- https://github.com/youzan/vant
-- https://github.com/didi/cube-ui
-- https://github.com/didi/mand-mobile
-- https://github.com/jdf2e/nutui
-- https://github.com/ant-design-colorful/ant-design-colorful
-- https://github.com/iambumblehead/react-dropdown-now
-- https://github.com/libwebp-wasm/gif2webp
-- https://github.com/libwebp-wasm/img2webp
+- [ant-design/ant-design-pro](https://github.com/ant-design/ant-design-pro)
+- [ant-design/pro-components](https://github.com/ant-design/pro-components)
+- [antvis/antvis.github.io](https://github.com/antvis/antvis.github.io)
+- [antvis/gatsby-theme-antv](https://github.com/antvis/gatsby-theme-antv)
+- [antvis/g2](https://github.com/antvis/g2)
+- [antvis/g2plot](https://github.com/antvis/g2plot)
+- [antvis/g6](https://github.com/antvis/g6)
+- [antvis/x6](https://github.com/antvis/x6)
+- [umijs/dumi](https://github.com/umijs/dumi)
+- [alibaba/hooks](https://github.com/alibaba/hooks)
+- [youzan/vant](https://github.com/youzan/vant)
+- [didi/cube-ui](https://github.com/didi/cube-ui)
+- [didi/mand-mobile](https://github.com/didi/mand-mobile)
+- [jdf2e/nutui](https://github.com/jdf2e/nutui)
+- [ant-design-colorful/ant-design-colorful](https://github.com/ant-design-colorful/ant-design-colorful)
+- [iambumblehead/react-dropdown-now](https://github.com/iambumblehead/react-dropdown-now)
+- [libwebp-wasm/gif2webp](https://github.com/libwebp-wasm/gif2webp)
+- [libwebp-wasm/img2webp](https://github.com/libwebp-wasm/img2webp)
 
-### Thanks to
+## 🙏 Thanks to
 
-- https://github.com/jwalton/gh-find-current-pr
-- https://github.com/marocchino/sticky-pull-request-comment
+- [jwalton/gh-find-current-pr](https://github.com/jwalton/gh-find-current-pr)
+- [marocchino/sticky-pull-request-comment](https://github.com/marocchino/sticky-pull-request-comment)
