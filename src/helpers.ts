@@ -87,14 +87,14 @@ export const formatLogSummary = (log: string, maxLines = 30): string => {
   if (!tail) {
     return '';
   }
-  // A code fence keeps the log verbatim and neutralises any backticks/HTML in
-  // it; the closing fence is padded enough to survive fences inside the log.
+  // A 4-backtick code fence keeps the log verbatim and survives any triple
+  // backticks the log itself may contain (npm/jest output, nested markdown).
   return [
     '<details><summary>📋 Build log (last lines)</summary>',
     '',
-    '```',
+    '````',
     tail,
-    '```',
+    '````',
     '',
     '</details>',
   ].join('\n');

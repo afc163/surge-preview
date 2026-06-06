@@ -89,7 +89,7 @@ describe('formatLogSummary', () => {
     expect(out).toContain(
       '<details><summary>📋 Build log (last lines)</summary>',
     );
-    expect(out).toContain('```\nerror line 1\nerror line 2\n```');
+    expect(out).toContain('````\nerror line 1\nerror line 2\n````');
     expect(out).toContain('</details>');
   });
 });

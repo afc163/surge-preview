@@ -214,14 +214,14 @@ const formatLogSummary = (log, maxLines = 30) => {
     if (!tail) {
         return '';
     }
-    // A code fence keeps the log verbatim and neutralises any backticks/HTML in
-    // it; the closing fence is padded enough to survive fences inside the log.
+    // A 4-backtick code fence keeps the log verbatim and survives any triple
+    // backticks the log itself may contain (npm/jest output, nested markdown).
     return [
         '<details><summary>📋 Build log (last lines)</summary>',
         '',
-        '```',
+        '````',
         tail,
-        '```',
+        '````',
         '',
         '</details>',
     ].join('\n');
@@ -618,14 +618,21 @@ function main() {
         const startTime = Date.now();
         try {
             // Capture stdout/stderr of each command so a failure can show the log tail.
+            // A streaming TextDecoder avoids corrupting multi-byte UTF-8 characters that
+            // straddle chunk boundaries, and the buffer is capped so a very chatty build
+            // can't grow it without bound (we only ever show the tail anyway).
+            const decoder = new TextDecoder('utf-8');
+            const MAX_LOG = 100000;
+            const appendLog = (data) => {
+                capturedLog += decoder.decode(data, { stream: true });
+                if (capturedLog.length > MAX_LOG) {
+                    capturedLog = capturedLog.slice(-MAX_LOG / 2);
+                }
+            };
             const captureOptions = {
                 listeners: {
-                    stdout: (data) => {
-                        capturedLog += data.toString();
-                    },
-                    stderr: (data) => {
-                        capturedLog += data.toString();
-                    },
+                    stdout: appendLog,
+                    stderr: appendLog,
                 },
             };
             if (!core.getInput('build')) {

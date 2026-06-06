@@ -206,14 +206,21 @@ async function main() {
   const startTime = Date.now();
   try {
     // Capture stdout/stderr of each command so a failure can show the log tail.
+    // A streaming TextDecoder avoids corrupting multi-byte UTF-8 characters that
+    // straddle chunk boundaries, and the buffer is capped so a very chatty build
+    // can't grow it without bound (we only ever show the tail anyway).
+    const decoder = new TextDecoder('utf-8');
+    const MAX_LOG = 100_000;
+    const appendLog = (data: Buffer) => {
+      capturedLog += decoder.decode(data, { stream: true });
+      if (capturedLog.length > MAX_LOG) {
+        capturedLog = capturedLog.slice(-MAX_LOG / 2);
+      }
+    };
     const captureOptions = {
       listeners: {
-        stdout: (data: Buffer) => {
-          capturedLog += data.toString();
-        },
-        stderr: (data: Buffer) => {
-          capturedLog += data.toString();
-        },
+        stdout: appendLog,
+        stderr: appendLog,
       },
     };
     if (!core.getInput('build')) {
