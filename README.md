@@ -22,8 +22,8 @@
 
 <table>
   <tr>
-    <td width="50%"><img alt="PR preview comment" src="https://github.com/user-attachments/assets/e247df64-975d-4ee3-90ee-13eb994b3f17"></td>
-    <td width="50%"><img alt="Preview website" src="https://github.com/user-attachments/assets/a3370d1c-fca1-4142-9949-a3b54bff2775"></td>
+    <td width="55%"><img alt="PR preview comment" src="https://github.com/user-attachments/assets/e247df64-975d-4ee3-90ee-13eb994b3f17"></td>
+    <td width="45%"><img alt="Preview website" src="https://github.com/user-attachments/assets/068ad690-3b7d-4ef4-a80c-a3663d99d5e7"></td>
   </tr>
 </table>
 
