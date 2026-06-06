@@ -20,10 +20,12 @@
 
 </div>
 
-<p align="center">
-  <img width="800" alt="PR preview comment" src="https://user-images.githubusercontent.com/507615/90243810-2230b480-de62-11ea-9a2c-9e869a2067dd.png">
-  <img width="800" alt="Preview website" src="https://user-images.githubusercontent.com/507615/91127543-0be3ed80-e6d9-11ea-897f-977c346bbc77.png">
-</p>
+<table>
+  <tr>
+    <td width="50%"><img alt="PR preview comment" src="https://github.com/user-attachments/assets/96295204-e900-401a-8da6-9baf60c5c42b"></td>
+    <td width="50%"><img alt="Preview website" src="https://github.com/user-attachments/assets/a3486b94-7163-4068-93e3-b02d6acfa811"></td>
+  </tr>
+</table>
 
 ## ✨ Why surge-preview?
 
