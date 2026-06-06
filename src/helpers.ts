@@ -39,6 +39,26 @@ export const getCommentFooter = () => {
   return '<sub>🤖 Powered by <a href="https://github.com/afc163/surge-preview">surge-preview</a></sub>';
 };
 
+/**
+ * Builds a scannable QR code image for the live preview URL so reviewers can
+ * open it on a phone without typing the address. The image is rendered by a
+ * free, no-auth QR service, keeping the action dependency-free.
+ */
+export const formatQRCode = ({
+  previewUrl,
+  size = 120,
+}: {
+  // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
+  previewUrl: string;
+  size?: number;
+}) => {
+  const target = `https://${previewUrl}`;
+  const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
+    target,
+  )}`;
+  return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -219,6 +239,14 @@ export const getCommentBody = ({
     value: `<a href="${buildingLogUrl}">View logs</a>`,
   });
   lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
+  // Only the live preview (success) has a reachable URL worth scanning, so the
+  // QR code rides along as a full-width row inside the card itself rather than
+  // a separate collapsed block.
+  if (status === 'success') {
+    lines.push({
+      full: `<div align="center">${formatQRCode({ previewUrl, size: 100 })}<br><sub>📱 Scan to open on mobile</sub></div>`,
+    });
+  }
 
   const image = formatImage({
     buildingLogUrl,

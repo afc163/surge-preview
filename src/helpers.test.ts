@@ -3,6 +3,7 @@ import {
   encodeDeploymentMeta,
   execSurgeCommand,
   formatImage,
+  formatQRCode,
   getCommentBody,
   getCommentFooter,
   parsePreviousDeployment,
@@ -46,6 +47,20 @@ describe('getCommentFooter', () => {
   });
 });
 
+describe('formatQRCode', () => {
+  it('renders a QR image that links to and encodes the preview url', () => {
+    expect(formatQRCode({ previewUrl: 'a-b-pr-1.surge.sh' })).toBe(
+      '<a href="https://a-b-pr-1.surge.sh"><img width="120" alt="Scan to open preview on mobile" src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=https%3A%2F%2Fa-b-pr-1.surge.sh"></a>',
+    );
+  });
+
+  it('honours a custom size for both the image and the encoded request', () => {
+    const html = formatQRCode({ previewUrl: 'a-b-pr-1.surge.sh', size: 200 });
+    expect(html).toContain('width="200"');
+    expect(html).toContain('size=200x200');
+  });
+});
+
 describe('getCommentBody', () => {
   const baseOptions = {
     previewUrl: 'owner-repo-preview-pr-1.surge.sh',
@@ -84,11 +99,18 @@ describe('getCommentBody', () => {
     expect(body).toContain(
       '<td>🕐 Updated</td><td><code>2026-06-05 04:12:33</code> UTC</td>',
     );
-    // screenshot lives inside the table and spans the rows via rowspan
+    // screenshot lives inside the table and spans the rows via rowspan; the
+    // success card has an extra QR row, so the screenshot spans 7 rows
     expect(body).toContain('<table>');
-    expect(body).toContain('rowspan="6"');
+    expect(body).toContain('rowspan="7"');
     expect(body).toContain('width="200"');
     expect(body).toContain('alt="PR preview ✅ Ready"');
+    // a scannable QR code to the live preview is rendered inside the card for
+    // mobile reviewers
+    expect(body).toContain('📱 Scan to open on mobile');
+    expect(body).toContain(
+      'src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"',
+    );
   });
 
   it('renders a building card without build time', () => {
@@ -99,6 +121,8 @@ describe('getCommentBody', () => {
     expect(body).not.toContain('<code>12.3s</code>');
     // one fewer detail row than the success card → smaller rowspan
     expect(body).toContain('rowspan="5"');
+    // the preview is not live yet, so no QR code is shown
+    expect(body).not.toContain('📱 Scan to open on mobile');
   });
 
   it('renders a fail card with a struck-through preview link', () => {
