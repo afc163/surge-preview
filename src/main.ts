@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import * as github from '@actions/github';
+import { getCheckRunName, getCheckRunState } from './checkRun';
 import { comment } from './commentToPullRequest';
 import {
   execSurgeCommand,
@@ -27,6 +28,8 @@ async function main() {
   const dist = core.getInput('dist');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
+  const setCommitStatus =
+    core.getInput('setCommitStatus')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -110,6 +113,53 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
+  // Publishes the deployment as a commit check run so the preview shows up in
+  // the PR checks even when triggered by a `workflow_run` event. Opt-in via
+  // `setCommitStatus` because it needs `checks: write`. Best-effort: a failure
+  // here (e.g. missing permission) must never break the deployment, so errors
+  // are only logged. The created check run id is reused to update the same
+  // check as the status transitions building → success/fail.
+  let previewCheckRunId: number | undefined;
+  const publishCheckRun = async (
+    status: 'building' | 'success' | 'fail' | 'destroy',
+  ): Promise<void> => {
+    if (!setCommitStatus) {
+      return;
+    }
+    const state = getCheckRunState(status, url);
+    try {
+      if (previewCheckRunId === undefined) {
+        const created = await octokit.rest.checks.create({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          name: getCheckRunName(job),
+          head_sha: commitSha,
+          details_url: buildingLogUrl,
+          status: state.status,
+          conclusion: state.conclusion,
+          output: state.output,
+        });
+        previewCheckRunId = created.data.id;
+      } else {
+        await octokit.rest.checks.update({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          check_run_id: previewCheckRunId,
+          details_url: buildingLogUrl,
+          status: state.status,
+          conclusion: state.conclusion,
+          output: state.output,
+        });
+      }
+    } catch (err) {
+      core.warning(
+        `Unable to publish commit check run: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  };
+
   fail = (err: Error) => {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
@@ -122,6 +172,8 @@ async function main() {
         buildingLogUrl,
       }),
     );
+    // Best-effort; fail() is sync so we don't await, but the call is fired.
+    void publishCheckRun('fail');
     if (failOnError) {
       core.setFailed(err.message);
     }
@@ -167,6 +219,7 @@ async function main() {
         command: ['surge', 'teardown', url, `--token`, surgeToken],
       });
 
+      await publishCheckRun('destroy');
       return commentIfNotForkedRepo(
         getCommentBody({
           status: 'destroy',
@@ -185,6 +238,7 @@ async function main() {
 
   // While a new build is running, carry forward the previous deployment that
   // is still live, recovered from the existing comment body.
+  await publishCheckRun('building');
   commentIfNotForkedRepo((previousBody) =>
     getCommentBody({
       status: 'building',
@@ -216,6 +270,7 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
+    await publishCheckRun('success');
     commentIfNotForkedRepo(
       getCommentBody({
         status: 'success',

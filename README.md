@@ -290,7 +290,7 @@ Occasionally, the API call may hit rate limits, as the search API can use many c
 
 In some situations, it is hard to know if the surge deployment has been done.
 
-When a workflow is triggered by `workflow_run`, it does not appear in the PR checks, so you cannot see whether the workflow has run or if it has failed. By default, there is no status on the commit. It is possible to add this manually in the workflow, for example by using [set-commit-status-action](https://github.com/myrotvorets/set-commit-status-action).
+When a workflow is triggered by `workflow_run`, it does not appear in the PR checks, so you cannot see whether the workflow has run or if it has failed. By default, there is no status on the commit. You can enable the built-in `setCommitStatus: true` input (which needs `checks: write` permission) to publish the deployment as a commit check run, or add it manually, for example by using [set-commit-status-action](https://github.com/myrotvorets/set-commit-status-action).
 
 However, when the workflow runs, the usual comment is updated by the `surge-preview` action to indicate whether the deployment is in progress or if the Surge deployment succeeded or failed.
 
@@ -304,6 +304,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `dist`          | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                            | `public`                                                                                                                                 |
 | `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
+| `setCommitStatus` | Publish the deployment as a commit check run so it shows up in the PR checks (requires `checks: write`). Especially useful for the `workflow_run` flow, where the deployment otherwise has no status on the commit. | `false`                                                                                            |
 
 ## 📤 Outputs
 

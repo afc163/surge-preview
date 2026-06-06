@@ -25,6 +25,10 @@ inputs:
     description: 'Determines if the preview instance will be torn down on PR close'
     default: 'false'
     required: false
+  setCommitStatus:
+    description: 'Publish the deployment as a commit check run (requires `checks: write`). Useful when the action runs from a `workflow_run` event and would otherwise not appear in PR checks.'
+    default: 'false'
+    required: false
 outputs:
   preview_url:
     description: 'The url for the related PR preview'
