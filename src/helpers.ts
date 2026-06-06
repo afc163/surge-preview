@@ -182,6 +182,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // Pre-rendered Lighthouse scores block, appended to the success card.
+  lighthouse?: string;
 }
 
 const formatUpdatedAt = () =>
@@ -209,6 +211,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  lighthouse,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
   const shortSha = gitCommitSha?.slice(0, 7) || '';
@@ -278,6 +281,11 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
+
+  // On success, append the Lighthouse scores block when one was provided.
+  if (status === 'success' && lighthouse) {
+    parts.push(lighthouse, '');
+  }
 
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';

@@ -304,6 +304,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `dist`          | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                            | `public`                                                                                                                                 |
 | `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
+| `lighthouse`    | Run Lighthouse (via the [PageSpeed Insights](https://developers.google.com/speed/docs/insights/v5/get-started) API) against the deployed preview and post the scores in the PR comment. | `false`                                                              |
 
 ## 📤 Outputs
 

@@ -25,6 +25,10 @@ inputs:
     description: 'Determines if the preview instance will be torn down on PR close'
     default: 'false'
     required: false
+  lighthouse:
+    description: 'Run Lighthouse (via the PageSpeed Insights API) against the deployed preview and post the scores in the PR comment'
+    default: 'false'
+    required: false
 outputs:
   preview_url:
     description: 'The url for the related PR preview'

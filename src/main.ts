@@ -7,6 +7,11 @@ import {
   getCommentBody,
   parsePreviousDeployment,
 } from './helpers';
+import {
+  fetchLighthouseScores,
+  formatLighthouse,
+  hasAnyScore,
+} from './lighthouse';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -27,6 +32,8 @@ async function main() {
   const dist = core.getInput('dist');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
+  const lighthouse =
+    core.getInput('lighthouse')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -216,6 +223,17 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
+    // Optionally run Lighthouse (via PageSpeed Insights) against the live
+    // preview. Best-effort: a failure here yields no scores and is not fatal.
+    let lighthouseBlock = '';
+    if (lighthouse) {
+      core.info('Fetching Lighthouse scores…');
+      const scores = await fetchLighthouseScores(`https://${url}`);
+      if (hasAnyScore(scores)) {
+        lighthouseBlock = formatLighthouse(scores);
+      }
+    }
+
     commentIfNotForkedRepo(
       getCommentBody({
         status: 'success',
@@ -224,6 +242,7 @@ async function main() {
         commitUrl,
         buildingLogUrl,
         duration,
+        lighthouse: lighthouseBlock,
       }),
     );
   } catch (err) {
