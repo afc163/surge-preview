@@ -223,18 +223,9 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
-    // Optionally run Lighthouse (via PageSpeed Insights) against the live
-    // preview. Best-effort: a failure here yields no scores and is not fatal.
-    let lighthouseBlock = '';
-    if (lighthouse) {
-      core.info('Fetching Lighthouse scores…');
-      const scores = await fetchLighthouseScores(`https://${url}`);
-      if (hasAnyScore(scores)) {
-        lighthouseBlock = formatLighthouse(scores);
-      }
-    }
-
-    commentIfNotForkedRepo(
+    // Post the success comment immediately so "Preview is ready" never waits on
+    // the optional, slow Lighthouse audit.
+    const successBody = (extra?: { lighthouse?: string }) =>
       getCommentBody({
         status: 'success',
         previewUrl: url,
@@ -242,9 +233,22 @@ async function main() {
         commitUrl,
         buildingLogUrl,
         duration,
-        lighthouse: lighthouseBlock,
-      }),
-    );
+        ...extra,
+      });
+    commentIfNotForkedRepo(successBody());
+
+    // Optionally run Lighthouse (via PageSpeed Insights) against the live
+    // preview, then edit the comment in place to append the scores. Best-effort:
+    // a failure here yields no scores and never affects the deployment result.
+    if (lighthouse) {
+      core.info('Fetching Lighthouse scores…');
+      const scores = await fetchLighthouseScores(`https://${url}`);
+      if (hasAnyScore(scores)) {
+        commentIfNotForkedRepo(
+          successBody({ lighthouse: formatLighthouse(scores) }),
+        );
+      }
+    }
   } catch (err) {
     if (err instanceof Error) {
       fail?.(err);

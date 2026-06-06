@@ -481,9 +481,11 @@ const fetchLighthouseScores = (url) => __awaiter(void 0, void 0, void 0, functio
     }
     try {
         // A full Lighthouse audit can take tens of seconds; cap it so a slow or
-        // hung PSI request can't keep the runner waiting indefinitely.
+        // hung PSI request can't keep the runner waiting too long. The success
+        // comment is posted before this runs, so this only bounds how long we wait
+        // to append the scores.
         const res = yield fetch(endpoint.toString(), {
-            signal: AbortSignal.timeout(120000),
+            signal: AbortSignal.timeout(60000),
         });
         if (!res.ok) {
             core.warning(`Lighthouse request failed with status ${res.status}`);
@@ -746,25 +748,22 @@ function main() {
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
+            // Post the success comment immediately so "Preview is ready" never waits on
+            // the optional, slow Lighthouse audit.
+            const successBody = (extra) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
+                buildingLogUrl,
+                duration }, extra));
+            commentIfNotForkedRepo(successBody());
             // Optionally run Lighthouse (via PageSpeed Insights) against the live
-            // preview. Best-effort: a failure here yields no scores and is not fatal.
-            let lighthouseBlock = '';
+            // preview, then edit the comment in place to append the scores. Best-effort:
+            // a failure here yields no scores and never affects the deployment result.
             if (lighthouse) {
                 core.info('Fetching Lighthouse scores…');
                 const scores = yield (0, lighthouse_1.fetchLighthouseScores)(`https://${url}`);
                 if ((0, lighthouse_1.hasAnyScore)(scores)) {
-                    lighthouseBlock = (0, lighthouse_1.formatLighthouse)(scores);
+                    commentIfNotForkedRepo(successBody({ lighthouse: (0, lighthouse_1.formatLighthouse)(scores) }));
                 }
             }
-            commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
-                status: 'success',
-                previewUrl: url,
-                gitCommitSha: commitSha,
-                commitUrl,
-                buildingLogUrl,
-                duration,
-                lighthouse: lighthouseBlock,
-            }));
         }
         catch (err) {
             if (err instanceof Error) {

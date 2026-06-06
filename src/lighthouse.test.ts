@@ -108,6 +108,20 @@ describe('fetchLighthouseScores', () => {
     });
   });
 
+  it('includes the API key in the request when the env var is set', async () => {
+    process.env.PAGESPEED_API_KEY = 'secret-key';
+    const fetchMock = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ lighthouseResult: { categories: {} } }),
+    });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await fetchLighthouseScores('https://a.surge.sh');
+
+    expect(fetchMock.mock.calls[0][0]).toContain('key=secret-key');
+    delete process.env.PAGESPEED_API_KEY;
+  });
+
   it('returns all-null and warns on a non-ok response', async () => {
     global.fetch = jest
       .fn()

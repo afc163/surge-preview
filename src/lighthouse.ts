@@ -103,9 +103,11 @@ export const fetchLighthouseScores = async (
 
   try {
     // A full Lighthouse audit can take tens of seconds; cap it so a slow or
-    // hung PSI request can't keep the runner waiting indefinitely.
+    // hung PSI request can't keep the runner waiting too long. The success
+    // comment is posted before this runs, so this only bounds how long we wait
+    // to append the scores.
     const res = await fetch(endpoint.toString(), {
-      signal: AbortSignal.timeout(120_000),
+      signal: AbortSignal.timeout(60_000),
     });
     if (!res.ok) {
       core.warning(`Lighthouse request failed with status ${res.status}`);
