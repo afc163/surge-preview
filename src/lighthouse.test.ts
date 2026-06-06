@@ -127,4 +127,14 @@ describe('fetchLighthouseScores', () => {
     expect(hasAnyScore(result)).toBe(false);
     expect(warning).toHaveBeenCalled();
   });
+
+  it('returns all-null when the response body is null', async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => null,
+    }) as unknown as typeof fetch;
+
+    const result = await fetchLighthouseScores('https://a.surge.sh');
+    expect(hasAnyScore(result)).toBe(false);
+  });
 });

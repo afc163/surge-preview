@@ -94,17 +94,27 @@ export const fetchLighthouseScores = async (
   for (const c of ['performance', 'accessibility', 'best-practices', 'seo']) {
     endpoint.searchParams.append('category', c);
   }
+  // An optional API key lifts the strict keyless rate limits that shared CI
+  // runner IPs can otherwise hit.
+  const apiKey = process.env.PAGESPEED_API_KEY || process.env.PSI_API_KEY;
+  if (apiKey) {
+    endpoint.searchParams.set('key', apiKey);
+  }
 
   try {
-    const res = await fetch(endpoint.toString());
+    // A full Lighthouse audit can take tens of seconds; cap it so a slow or
+    // hung PSI request can't keep the runner waiting indefinitely.
+    const res = await fetch(endpoint.toString(), {
+      signal: AbortSignal.timeout(120_000),
+    });
     if (!res.ok) {
       core.warning(`Lighthouse request failed with status ${res.status}`);
       return empty;
     }
     const data = (await res.json()) as {
       lighthouseResult?: { categories?: Record<string, unknown> };
-    };
-    const categories = data.lighthouseResult?.categories ?? {};
+    } | null;
+    const categories = data?.lighthouseResult?.categories ?? {};
     return {
       performance: toScore(categories.performance),
       accessibility: toScore(categories.accessibility),
