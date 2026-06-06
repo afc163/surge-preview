@@ -150,7 +150,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -175,6 +175,17 @@ const getCommentFooter = () => {
     return '<sub>🤖 Powered by <a href="https://github.com/afc163/surge-preview">surge-preview</a></sub>';
 };
 exports.getCommentFooter = getCommentFooter;
+/**
+ * Builds a scannable QR code image for the live preview URL so reviewers can
+ * open it on a phone without typing the address. The image is rendered by a
+ * free, no-auth QR service, keeping the action dependency-free.
+ */
+const formatQRCode = ({ previewUrl, size = 120, }) => {
+    const target = `https://${previewUrl}`;
+    const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(target)}`;
+    return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
+};
+exports.formatQRCode = formatQRCode;
 // Default screenshots hosted on GitHub user-images. Kept identical to the
 // previous inline URLs so existing behaviour is preserved.
 const STATUS_META = {
@@ -311,6 +322,12 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         '</table>',
     ].join('\n');
     const parts = [meta.title, '', table, ''];
+    // Only the live preview (success) is worth scanning; other states have no
+    // reachable URL. Tuck the QR code into a collapsed <details> so it never
+    // dominates the comment but is one click away on a phone.
+    if (status === 'success') {
+        parts.push('<details><summary>📱 Scan to open on mobile</summary>', '', (0, exports.formatQRCode)({ previewUrl }), '', '</details>', '');
+    }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
         // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in

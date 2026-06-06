@@ -39,6 +39,26 @@ export const getCommentFooter = () => {
   return '<sub>🤖 Powered by <a href="https://github.com/afc163/surge-preview">surge-preview</a></sub>';
 };
 
+/**
+ * Builds a scannable QR code image for the live preview URL so reviewers can
+ * open it on a phone without typing the address. The image is rendered by a
+ * free, no-auth QR service, keeping the action dependency-free.
+ */
+export const formatQRCode = ({
+  previewUrl,
+  size = 120,
+}: {
+  // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
+  previewUrl: string;
+  size?: number;
+}) => {
+  const target = `https://${previewUrl}`;
+  const src = `https://api.qrserver.com/v1/create-qr-code/?size=${size}x${size}&data=${encodeURIComponent(
+    target,
+  )}`;
+  return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -249,6 +269,20 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
+
+  // Only the live preview (success) is worth scanning; other states have no
+  // reachable URL. Tuck the QR code into a collapsed <details> so it never
+  // dominates the comment but is one click away on a phone.
+  if (status === 'success') {
+    parts.push(
+      '<details><summary>📱 Scan to open on mobile</summary>',
+      '',
+      formatQRCode({ previewUrl }),
+      '',
+      '</details>',
+      '',
+    );
+  }
 
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';
