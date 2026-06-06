@@ -105,11 +105,10 @@ describe('getCommentBody', () => {
     expect(body).toContain('rowspan="7"');
     expect(body).toContain('width="200"');
     expect(body).toContain('alt="PR preview ✅ Ready"');
-    // a scannable QR code to the live preview is rendered inside the card for
-    // mobile reviewers
-    expect(body).toContain('📱 Scan to open on mobile');
+    // a scannable QR code to the live preview is rendered as a label/value row
+    // inside the card for mobile reviewers
     expect(body).toContain(
-      'src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"',
+      '<td>📱 Mobile</td><td><a href="https://owner-repo-preview-pr-1.surge.sh"><img width="100" alt="Scan to open preview on mobile" src="https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh"></a></td>',
     );
   });
 

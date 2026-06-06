@@ -240,11 +240,12 @@ export const getCommentBody = ({
   });
   lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
   // Only the live preview (success) has a reachable URL worth scanning, so the
-  // QR code rides along as a full-width row inside the card itself rather than
-  // a separate collapsed block.
+  // QR code rides along as a regular label/value row — label on the left, the
+  // scannable image on the right — to match the rest of the card.
   if (status === 'success') {
     lines.push({
-      full: `<div align="center">${formatQRCode({ previewUrl, size: 100 })}<br><sub>📱 Scan to open on mobile</sub></div>`,
+      label: '📱 Mobile',
+      value: formatQRCode({ previewUrl, size: 100 }),
     });
   }
 
