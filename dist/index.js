@@ -1,6 +1,61 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 9475:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCheckRunName = exports.getCheckRunState = void 0;
+const CHECK_RUN_STATE = {
+    building: () => ({
+        status: 'in_progress',
+        output: {
+            title: '⚡️ Deploying preview…',
+            summary: 'The preview deployment is in progress.',
+        },
+    }),
+    success: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'success',
+        output: {
+            title: '✅ Preview is ready',
+            summary: `The preview is live at https://${previewUrl}`,
+        },
+    }),
+    fail: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'failure',
+        output: {
+            title: '❌ Deploy failed',
+            summary: `The preview deployment to https://${previewUrl} failed.`,
+        },
+    }),
+    destroy: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'neutral',
+        output: {
+            title: '♻️ Preview destroyed',
+            summary: `The preview at https://${previewUrl} has been torn down.`,
+        },
+    }),
+};
+/**
+ * Maps a deployment status onto the GitHub check run fields (status,
+ * conclusion and output). Kept as a pure function so the mapping can be tested
+ * without hitting the API.
+ */
+const getCheckRunState = (status, previewUrl) => CHECK_RUN_STATE[status](previewUrl);
+exports.getCheckRunState = getCheckRunState;
+// The name shown for the check on the PR. Includes the job so multiple preview
+// jobs on the same commit produce distinct checks.
+const getCheckRunName = (job) => `surge-preview${job ? ` (${job})` : ''}`;
+exports.getCheckRunName = getCheckRunName;
+
+
+/***/ }),
+
 /***/ 9661:
 /***/ (function(__unused_webpack_module, exports) {
 
@@ -150,7 +205,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatScreenshot = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -186,6 +241,27 @@ const formatQRCode = ({ previewUrl, size = 120, }) => {
     return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 exports.formatQRCode = formatQRCode;
+/**
+ * Builds a screenshot thumbnail of the live preview's landing page, linking to
+ * the page itself. Rendered by the free thum.io service, so — like the QR code
+ * — it needs no extra dependency or image hosting. The thumbnail is only a
+ * convenience; if the service is unreachable the image simply fails to load
+ * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
+ */
+const formatScreenshot = ({ previewUrl, width = 600, maxAgeHours = 1, }) => {
+    const target = `https://${previewUrl}`;
+    const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+    return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
+};
+exports.formatScreenshot = formatScreenshot;
 // Default screenshots hosted on GitHub user-images. Kept identical to the
 // previous inline URLs so existing behaviour is preserved.
 const STATUS_META = {
@@ -275,7 +351,7 @@ const PREVIOUS_BADGE = {
  * details, so the header stays meaningful. A previous deployment, when
  * provided, is surfaced below the card and re-embedded for the next run.
  */
-const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, lighthouse, }) => {
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, lighthouse, screenshot, }) => {
     var _a;
     const meta = STATUS_META[status];
     const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
@@ -331,6 +407,11 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         '</table>',
     ].join('\n');
     const parts = [meta.title, '', table, ''];
+    // On success, optionally embed a screenshot of the live preview's landing
+    // page so reviewers see the change without opening the link.
+    if (status === 'success' && screenshot) {
+        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
+    }
     // On success, append the Lighthouse scores block when one was provided.
     if (status === 'success' && lighthouse) {
         parts.push(lighthouse, '');
@@ -564,6 +645,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const exec_1 = __nccwpck_require__(5236);
 const github = __importStar(__nccwpck_require__(3228));
+const checkRun_1 = __nccwpck_require__(9475);
 const commentToPullRequest_1 = __nccwpck_require__(618);
 const helpers_1 = __nccwpck_require__(9761);
 const lighthouse_1 = __nccwpck_require__(1718);
@@ -571,7 +653,7 @@ let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -585,6 +667,8 @@ function main() {
         const dist = core.getInput('dist');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
         const lighthouse = ((_b = core.getInput('lighthouse')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
+        const setCommitStatus = ((_c = core.getInput('setCommitStatus')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
+        const screenshot = ((_d = core.getInput('screenshot')) === null || _d === void 0 ? void 0 : _d.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
@@ -597,11 +681,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_d = (_c = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _c === void 0 ? void 0 : _c.head) === null || _d === void 0 ? void 0 : _d.sha) ||
-            ((_e = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _e === void 0 ? void 0 : _e.head_sha);
+            ((_f = (_e = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _e === void 0 ? void 0 : _e.head) === null || _f === void 0 ? void 0 : _f.sha) ||
+            ((_g = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _g === void 0 ? void 0 : _g.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head}`);
-        const fromForkedRepo = (_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head}`);
+        const fromForkedRepo = (_j = payload.pull_request) === null || _j === void 0 ? void 0 : _j.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -657,6 +741,48 @@ function main() {
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+        // Publishes the deployment as a commit check run so the preview shows up in
+        // the PR checks even when triggered by a `workflow_run` event. Opt-in via
+        // `setCommitStatus` because it needs `checks: write`. Best-effort: a failure
+        // here (e.g. missing permission) must never break the deployment, so errors
+        // are only logged. The created check run id is reused to update the same
+        // check as the status transitions building → success/fail.
+        let previewCheckRunId;
+        const publishCheckRun = (status) => __awaiter(this, void 0, void 0, function* () {
+            if (!setCommitStatus) {
+                return;
+            }
+            const state = (0, checkRun_1.getCheckRunState)(status, url);
+            try {
+                if (previewCheckRunId === undefined) {
+                    const created = yield octokit.rest.checks.create({
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        name: (0, checkRun_1.getCheckRunName)(job),
+                        head_sha: commitSha,
+                        details_url: buildingLogUrl,
+                        status: state.status,
+                        conclusion: state.conclusion,
+                        output: state.output,
+                    });
+                    previewCheckRunId = created.data.id;
+                }
+                else {
+                    yield octokit.rest.checks.update({
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        check_run_id: previewCheckRunId,
+                        details_url: buildingLogUrl,
+                        status: state.status,
+                        conclusion: state.conclusion,
+                        output: state.output,
+                    });
+                }
+            }
+            catch (err) {
+                core.warning(`Unable to publish commit check run: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        });
         fail = (err) => {
             core.info('error message:');
             core.info(JSON.stringify(err, null, 2));
@@ -667,6 +793,8 @@ function main() {
                 commitUrl,
                 buildingLogUrl,
             }));
+            // Best-effort; fail() is sync so we don't await, but the call is fired.
+            void publishCheckRun('fail');
             if (failOnError) {
                 core.setFailed(err.message);
             }
@@ -690,8 +818,8 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_h = data === null || data === void 0 ? void 0 : data.check_runs) === null || _h === void 0 ? void 0 : _h.length) >= 0) {
-            const checkRun = (_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.find((item) => item.name === job);
+        if (((_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.length) >= 0) {
+            const checkRun = (_l = data === null || data === void 0 ? void 0 : data.check_runs) === null || _l === void 0 ? void 0 : _l.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         if (checkRunId) {
@@ -705,6 +833,7 @@ function main() {
                 yield (0, helpers_1.execSurgeCommand)({
                     command: ['surge', 'teardown', url, `--token`, surgeToken],
                 });
+                yield publishCheckRun('destroy');
                 return commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
                     status: 'destroy',
                     previewUrl: url,
@@ -721,6 +850,7 @@ function main() {
         }
         // While a new build is running, carry forward the previous deployment that
         // is still live, recovered from the existing comment body.
+        yield publishCheckRun('building');
         commentIfNotForkedRepo((previousBody) => (0, helpers_1.getCommentBody)({
             status: 'building',
             previewUrl: url,
@@ -748,11 +878,13 @@ function main() {
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
+            yield publishCheckRun('success');
             // Post the success comment immediately so "Preview is ready" never waits on
             // the optional, slow Lighthouse audit.
             const successBody = (extra) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
                 buildingLogUrl,
-                duration }, extra));
+                duration,
+                screenshot }, extra));
             // Await the first comment so the in-place edit below can't race it (both
             // resolve the same sticky comment).
             yield commentIfNotForkedRepo(successBody());

@@ -25,6 +25,14 @@ inputs:
     description: 'Determines if the preview instance will be torn down on PR close'
     default: 'false'
     required: false
+  setCommitStatus:
+    description: 'Publish the deployment as a commit check run (requires `checks: write`). Useful when the action runs from a `workflow_run` event and would otherwise not appear in PR checks.'
+    default: 'false'
+    required: false
+  screenshot:
+    description: 'Embed a screenshot of the deployed preview in the PR comment (rendered via the thum.io service)'
+    default: 'false'
+    required: false
   lighthouse:
     description: 'Run Lighthouse (via the PageSpeed Insights API) against the deployed preview and post the scores in the PR comment'
     default: 'false'
