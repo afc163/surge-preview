@@ -4,17 +4,25 @@ import { exec } from '@actions/exec';
 
 interface ExecSurgeCommandOptions {
   command: string[];
+  // Optional sink for the command's stdout/stderr, so the caller can fold the
+  // deploy output into its own captured log (used for the failure summary).
+  onOutput?: (chunk: string) => void;
 }
 
 export const execSurgeCommand = async ({
   command,
+  onOutput,
 }: ExecSurgeCommandOptions): Promise<void> => {
   let myOutput = '';
+  const capture = (data: Buffer) => {
+    const text = data.toString();
+    myOutput += text;
+    onOutput?.(text);
+  };
   const options = {
     listeners: {
-      stdout: (stdoutData: Buffer) => {
-        myOutput += stdoutData.toString();
-      },
+      stdout: capture,
+      stderr: capture,
     },
   };
   await exec(`npx`, command, options);
@@ -59,6 +67,47 @@ export const formatQRCode = ({
     target,
   )}`;
   return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
+};
+
+/**
+ * Extracts the last `maxLines` non-empty-trimmed lines of a build/deploy log,
+ * the part most likely to contain the actual error. Returns an empty string
+ * when there is nothing useful to show.
+ */
+export const tailLog = (log: string, maxLines = 30): string => {
+  if (!log) {
+    return '';
+  }
+  const lines = log.replace(/\r\n/g, '\n').split('\n');
+  // Drop trailing blank lines so the summary ends on real output.
+  while (lines.length > 0 && lines[lines.length - 1].trim() === '') {
+    lines.pop();
+  }
+  return lines.slice(-maxLines).join('\n');
+};
+
+/**
+ * Renders a captured failure log as a collapsed <details> block. The log is
+ * wrapped in a fenced code block, so it is escaped by GitHub's renderer and
+ * cannot break the surrounding comment markup. Returns an empty string when
+ * there is no log to show.
+ */
+export const formatLogSummary = (log: string, maxLines = 30): string => {
+  const tail = tailLog(log, maxLines);
+  if (!tail) {
+    return '';
+  }
+  // A 4-backtick code fence keeps the log verbatim and survives any triple
+  // backticks the log itself may contain (npm/jest output, nested markdown).
+  return [
+    '<details><summary>📋 Build log (last lines)</summary>',
+    '',
+    '````',
+    tail,
+    '````',
+    '',
+    '</details>',
+  ].join('\n');
 };
 
 // Aggregate size of a built site, used for the artifact size report.
@@ -313,6 +362,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // Captured build/deploy output, surfaced (collapsed) on the fail status.
+  logTail?: string;
   // Measured size of the built artifact, shown (with a delta) on success.
   dist?: DistStats;
   // Pre-rendered Lighthouse scores block, appended to the success card.
@@ -346,6 +397,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  logTail,
   dist,
   lighthouse,
   screenshot,
@@ -427,6 +479,15 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
+
+  // On failure, surface the tail of the captured build/deploy log so reviewers
+  // can see what went wrong without leaving the PR.
+  if (status === 'fail' && logTail) {
+    const summary = formatLogSummary(logTail);
+    if (summary) {
+      parts.push(summary, '');
+    }
+  }
 
   // On success, optionally embed a screenshot of the live preview's landing
   // page so reviewers see the change without opening the link.

@@ -123,6 +123,11 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
+  // Accumulates build/deploy output so a failure comment can show the tail of
+  // the log. Kept in the main scope so `fail` can read whatever was captured
+  // before the error.
+  let capturedLog = '';
+
   // Publishes the deployment as a commit check run so the preview shows up in
   // the PR checks even when triggered by a `workflow_run` event. Opt-in via
   // `setCommitStatus` because it needs `checks: write`. Best-effort: a failure
@@ -180,6 +185,8 @@ async function main() {
         gitCommitSha: commitSha,
         commitUrl,
         buildingLogUrl,
+        // Prefer the captured command output; fall back to the error message.
+        logTail: capturedLog || err.message,
       }),
     );
     // Best-effort; fail() is sync so we don't await, but the call is fired.
@@ -262,22 +269,48 @@ async function main() {
 
   const startTime = Date.now();
   try {
+    // Capture stdout/stderr of each command so a failure can show the log tail.
+    // A streaming TextDecoder avoids corrupting multi-byte UTF-8 characters that
+    // straddle chunk boundaries, and the buffer is capped so a very chatty build
+    // can't grow it without bound (we only ever show the tail anyway).
+    const decoder = new TextDecoder('utf-8');
+    const MAX_LOG = 100_000;
+    const appendText = (text: string) => {
+      capturedLog += text;
+      if (capturedLog.length > MAX_LOG) {
+        capturedLog = capturedLog.slice(-MAX_LOG / 2);
+      }
+    };
+    const appendLog = (data: Buffer) => {
+      appendText(decoder.decode(data, { stream: true }));
+    };
+    const captureOptions = {
+      listeners: {
+        stdout: appendLog,
+        stderr: appendLog,
+      },
+    };
     if (!core.getInput('build')) {
-      await exec(`npm install`);
-      await exec(`npm run build`);
+      await exec(`npm install`, [], captureOptions);
+      await exec(`npm run build`, [], captureOptions);
     } else {
       const buildCommands = core.getInput('build').split('\n');
       for (const command of buildCommands) {
         core.info(`RUN: ${command}`);
-        await exec(command);
+        await exec(command, [], captureOptions);
       }
     }
     const duration = (Date.now() - startTime) / 1000;
     core.info(`Build time: ${duration} seconds`);
     core.info(`Deploy to ${url}`);
 
+    // Reset the captured log before the deploy step so that, if the deploy
+    // fails, the failure summary shows the surge output (the actual error)
+    // rather than the now-irrelevant successful build log.
+    capturedLog = '';
     await execSurgeCommand({
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
+      onOutput: appendText,
     });
 
     // Measure the deployed artifact so the comment can report its size and,
