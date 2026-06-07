@@ -1,3 +1,5 @@
+import { readdir, stat } from 'node:fs/promises';
+import { join } from 'node:path';
 import { exec } from '@actions/exec';
 
 interface ExecSurgeCommandOptions {
@@ -108,6 +110,126 @@ export const formatLogSummary = (log: string, maxLines = 30): string => {
   ].join('\n');
 };
 
+// Aggregate size of a built site, used for the artifact size report.
+export interface DistStats {
+  bytes: number;
+  files: number;
+}
+
+/**
+ * Recursively measures the total byte size and file count of a directory.
+ * Symlinks are not followed and unreadable entries are skipped so a single
+ * odd file can never crash the whole report. Returns zeroes when the directory
+ * is missing or cannot be read.
+ */
+export const measureDist = async (dir: string): Promise<DistStats> => {
+  let bytes = 0;
+  let files = 0;
+
+  const walk = async (current: string): Promise<void> => {
+    let entries;
+    try {
+      entries = await readdir(current, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const entry of entries) {
+      const full = join(current, entry.name);
+      if (entry.isDirectory()) {
+        // Skip heavy, non-artifact directories so a misconfigured `dist`
+        // (e.g. `.` or empty) doesn't traverse the whole workspace.
+        if (entry.name === 'node_modules' || entry.name === '.git') {
+          continue;
+        }
+        await walk(full);
+      } else if (entry.isFile()) {
+        try {
+          const info = await stat(full);
+          bytes += info.size;
+          files += 1;
+        } catch {
+          // Skip entries we cannot stat (e.g. broken symlinks).
+        }
+      }
+    }
+  };
+
+  await walk(dir);
+  return { bytes, files };
+};
+
+/**
+ * Formats a byte count into a compact human-readable string, e.g. `1.2 MB`.
+ */
+export const formatBytes = (bytes: number): string => {
+  if (!Number.isFinite(bytes) || bytes <= 0) {
+    return '0 B';
+  }
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  // Clamp to [0, last unit] so a sub-1 byte value can't produce units[-1].
+  const exponent = Math.max(
+    0,
+    Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1),
+  );
+  const value = bytes / 1024 ** exponent;
+  // Whole bytes have no decimals; everything else keeps one for readability.
+  const formatted = exponent === 0 ? `${value}` : value.toFixed(1);
+  return `${formatted} ${units[exponent]}`;
+};
+
+/**
+ * Renders the size delta against a previous deployment, e.g. `(+1.2 KB ⬆️)`.
+ * Returns an empty string when there is nothing meaningful to compare.
+ */
+export const formatSizeDiff = (current: number, previous?: number): string => {
+  if (
+    !Number.isFinite(current) ||
+    current < 0 ||
+    typeof previous !== 'number' ||
+    previous < 0
+  ) {
+    return '';
+  }
+  const delta = current - previous;
+  if (delta === 0) {
+    return ' (no change)';
+  }
+  const arrow = delta > 0 ? '⬆️' : '⬇️';
+  const sign = delta > 0 ? '+' : '-';
+  return ` (${sign}${formatBytes(Math.abs(delta))} ${arrow})`;
+};
+
+/**
+ * Builds a screenshot thumbnail of the live preview's landing page, linking to
+ * the page itself. Rendered by the free thum.io service, so — like the QR code
+ * — it needs no extra dependency or image hosting. The thumbnail is only a
+ * convenience; if the service is unreachable the image simply fails to load
+ * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
+ */
+export const formatScreenshot = ({
+  previewUrl,
+  width = 600,
+  maxAgeHours = 1,
+}: {
+  // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
+  previewUrl: string;
+  width?: number;
+  // Refresh the thumbnail when the cached capture is older than this many hours.
+  maxAgeHours?: number;
+}) => {
+  const target = `https://${previewUrl}`;
+  const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+  return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -158,6 +280,11 @@ export interface PreviousDeployment {
   shortSha: string;
   previewUrl: string;
   updatedAt: string;
+  // Built artifact size in bytes, carried forward so the next run can show a
+  // size delta. Optional for backwards compatibility with older snapshots.
+  bytes?: number;
+  // Built artifact file count, recorded alongside `bytes`.
+  files?: number;
 }
 
 const META_PREFIX = '<!-- surge-preview-meta:';
@@ -181,12 +308,16 @@ const isPreviousDeployment = (value: unknown): value is PreviousDeployment => {
     return false;
   }
   const v = value as Record<string, unknown>;
+  const sizeIsValid = (n: unknown): boolean =>
+    n === undefined || (typeof n === 'number' && Number.isFinite(n) && n >= 0);
   return (
     typeof v.status === 'string' &&
     v.status in STATUS_META &&
     isNonEmptyString(v.shortSha) &&
     isNonEmptyString(v.previewUrl) &&
-    isNonEmptyString(v.updatedAt)
+    isNonEmptyString(v.updatedAt) &&
+    sizeIsValid(v.bytes) &&
+    sizeIsValid(v.files)
   );
 };
 
@@ -233,6 +364,12 @@ export interface CommentBodyOptions {
   previous?: PreviousDeployment;
   // Captured build/deploy output, surfaced (collapsed) on the fail status.
   logTail?: string;
+  // Measured size of the built artifact, shown (with a delta) on success.
+  dist?: DistStats;
+  // Pre-rendered Lighthouse scores block, appended to the success card.
+  lighthouse?: string;
+  // When true, embed a screenshot of the live preview on the success card.
+  screenshot?: boolean;
 }
 
 const formatUpdatedAt = () =>
@@ -261,6 +398,9 @@ export const getCommentBody = ({
   imageUrl,
   previous,
   logTail,
+  dist,
+  lighthouse,
+  screenshot,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
   const shortSha = gitCommitSha?.slice(0, 7) || '';
@@ -285,6 +425,15 @@ export const getCommentBody = ({
   }
   if (status === 'success' && typeof duration === 'number') {
     lines.push({ label: '⏱️ Build time', value: `<code>${duration}s</code>` });
+  }
+  // Report the built artifact size and, when a previous size is known, the
+  // delta against it — a cheap regression signal right in the comment.
+  if (status === 'success' && dist) {
+    const diff = formatSizeDiff(dist.bytes, previous?.bytes);
+    lines.push({
+      label: '📦 Size',
+      value: `<code>${formatBytes(dist.bytes)}</code>${diff} · ${dist.files} files`,
+    });
   }
   lines.push({
     label: '🪵 Logs',
@@ -340,6 +489,24 @@ export const getCommentBody = ({
     }
   }
 
+  // On success, optionally embed a screenshot of the live preview's landing
+  // page so reviewers see the change without opening the link.
+  if (status === 'success' && screenshot) {
+    parts.push(
+      '<details open><summary>🖼️ Preview screenshot</summary>',
+      '',
+      formatScreenshot({ previewUrl }),
+      '',
+      '</details>',
+      '',
+    );
+  }
+
+  // On success, append the Lighthouse scores block when one was provided.
+  if (status === 'success' && lighthouse) {
+    parts.push(lighthouse, '');
+  }
+
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';
     // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
@@ -351,8 +518,25 @@ export const getCommentBody = ({
     );
   }
 
+  // Carry the artifact size forward in the snapshot. On a success deploy we
+  // embed the freshly measured size; on the interim building comment there is
+  // no measurement, so we preserve the previous deployment's size instead —
+  // otherwise the building comment would wipe the baseline the next success
+  // comment needs to render a size delta.
+  const snapshotSize = dist
+    ? { bytes: dist.bytes, files: dist.files }
+    : previous?.bytes !== undefined
+      ? { bytes: previous.bytes, files: previous.files }
+      : {};
+
   parts.push(
-    encodeDeploymentMeta({ status, shortSha, previewUrl, updatedAt }),
+    encodeDeploymentMeta({
+      status,
+      shortSha,
+      previewUrl,
+      updatedAt,
+      ...snapshotSize,
+    }),
     getCommentFooter(),
   );
 

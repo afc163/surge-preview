@@ -2,11 +2,15 @@ import { exec } from '@actions/exec';
 import {
   encodeDeploymentMeta,
   execSurgeCommand,
+  formatBytes,
   formatImage,
   formatLogSummary,
   formatQRCode,
+  formatScreenshot,
+  formatSizeDiff,
   getCommentBody,
   getCommentFooter,
+  measureDist,
   parsePreviousDeployment,
   tailLog,
 } from './helpers';
@@ -94,6 +98,106 @@ describe('formatLogSummary', () => {
   });
 });
 
+describe('formatBytes', () => {
+  it('formats zero and non-positive values as 0 B', () => {
+    expect(formatBytes(0)).toBe('0 B');
+    expect(formatBytes(-5)).toBe('0 B');
+    expect(formatBytes(Number.NaN)).toBe('0 B');
+  });
+
+  it('formats whole bytes without decimals', () => {
+    expect(formatBytes(512)).toBe('512 B');
+  });
+
+  it('scales up to KB/MB/GB with one decimal', () => {
+    expect(formatBytes(1024)).toBe('1.0 KB');
+    expect(formatBytes(1536)).toBe('1.5 KB');
+    expect(formatBytes(1024 * 1024)).toBe('1.0 MB');
+    expect(formatBytes(1024 * 1024 * 1024)).toBe('1.0 GB');
+  });
+});
+
+describe('formatSizeDiff', () => {
+  it('returns empty when there is no previous size', () => {
+    expect(formatSizeDiff(1000)).toBe('');
+    expect(formatSizeDiff(1000, -1)).toBe('');
+  });
+
+  it('reports no change for an identical size', () => {
+    expect(formatSizeDiff(1000, 1000)).toBe(' (no change)');
+  });
+
+  it('reports an increase with an up arrow', () => {
+    expect(formatSizeDiff(2048, 1024)).toBe(' (+1.0 KB ⬆️)');
+  });
+
+  it('reports a decrease with a down arrow', () => {
+    expect(formatSizeDiff(1024, 2048)).toBe(' (-1.0 KB ⬇️)');
+  });
+});
+
+describe('measureDist', () => {
+  const fs = require('node:fs');
+  const os = require('node:os');
+  const path = require('node:path');
+  let dir: string;
+
+  beforeEach(() => {
+    dir = fs.mkdtempSync(path.join(os.tmpdir(), 'surge-dist-'));
+  });
+
+  afterEach(() => {
+    fs.rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('returns zeroes for a missing directory', async () => {
+    expect(await measureDist(path.join(dir, 'nope'))).toEqual({
+      bytes: 0,
+      files: 0,
+    });
+  });
+
+  it('sums bytes and file counts recursively', async () => {
+    fs.writeFileSync(path.join(dir, 'a.txt'), 'hello'); // 5 bytes
+    fs.mkdirSync(path.join(dir, 'sub'));
+    fs.writeFileSync(path.join(dir, 'sub', 'b.txt'), 'world!'); // 6 bytes
+    expect(await measureDist(dir)).toEqual({ bytes: 11, files: 2 });
+  });
+
+  it('skips node_modules and .git directories', async () => {
+    fs.writeFileSync(path.join(dir, 'a.txt'), 'hello'); // 5 bytes, counted
+    fs.mkdirSync(path.join(dir, 'node_modules'));
+    fs.writeFileSync(path.join(dir, 'node_modules', 'big.js'), 'ignored');
+    fs.mkdirSync(path.join(dir, '.git'));
+    fs.writeFileSync(path.join(dir, '.git', 'HEAD'), 'ignored too');
+    expect(await measureDist(dir)).toEqual({ bytes: 5, files: 1 });
+  });
+});
+
+describe('formatScreenshot', () => {
+  it('renders a thumbnail with a stable URL and a maxAge refresh modifier', () => {
+    expect(formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' })).toBe(
+      '<a href="https://a-b-pr-1.surge.sh"><img width="600" alt="Preview screenshot" src="https://image.thum.io/get/width/600/maxAge/1/https://a-b-pr-1.surge.sh"></a>',
+    );
+  });
+
+  it('does not use a per-commit query cache-buster (avoids cold placeholder)', () => {
+    const html = formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' });
+    expect(html).not.toContain('?v=');
+  });
+
+  it('honours a custom width and maxAge', () => {
+    const html = formatScreenshot({
+      previewUrl: 'a-b-pr-1.surge.sh',
+      width: 800,
+      maxAgeHours: 0,
+    });
+    expect(html).toContain('width="800"');
+    expect(html).toContain('/width/800/');
+    expect(html).toContain('/maxAge/0/');
+  });
+});
+
 describe('getCommentBody', () => {
   const baseOptions = {
     previewUrl: 'owner-repo-preview-pr-1.surge.sh',
@@ -145,6 +249,96 @@ describe('getCommentBody', () => {
     );
   });
 
+  it('renders the artifact size with no delta on a first deploy', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      dist: { bytes: 1536, files: 3 },
+    });
+    expect(body).toContain(
+      '<td>📦 Size</td><td><code>1.5 KB</code> · 3 files</td>',
+    );
+    // the size is persisted into the snapshot for the next run to diff against
+    const recovered = parsePreviousDeployment(body);
+    expect(recovered?.bytes).toBe(1536);
+    expect(recovered?.files).toBe(3);
+  });
+
+  it('renders the artifact size with a delta against the previous deploy', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      dist: { bytes: 2048, files: 4 },
+      previous: {
+        status: 'success',
+        shortSha: 'abc1234',
+        previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+        updatedAt: '2026-06-04 00:00:00',
+        bytes: 1024,
+        files: 3,
+      },
+    });
+    expect(body).toContain(
+      '<td>📦 Size</td><td><code>2.0 KB</code> (+1.0 KB ⬆️) · 4 files</td>',
+    );
+  });
+
+  it('carries the previous size forward through the building comment', () => {
+    // The interim building comment has no measured dist, but it must preserve
+    // the previous deployment's size in the snapshot so the next success
+    // comment can still render a delta (otherwise the baseline is wiped).
+    const buildingBody = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      previous: {
+        status: 'success',
+        shortSha: 'abc1234',
+        previewUrl: 'owner-repo-preview-pr-1.surge.sh',
+        updatedAt: '2026-06-04 00:00:00',
+        bytes: 1024,
+        files: 3,
+      },
+    });
+    const recovered = parsePreviousDeployment(buildingBody);
+    expect(recovered?.bytes).toBe(1024);
+    expect(recovered?.files).toBe(3);
+
+    // And feeding that recovered snapshot into the success comment yields a diff.
+    const successBody = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      dist: { bytes: 2048, files: 4 },
+      previous: recovered,
+    });
+    expect(successBody).toContain('(+1.0 KB ⬆️)');
+  });
+
+  it('embeds a screenshot on success when screenshot is enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      screenshot: true,
+    });
+    expect(body).toContain('🖼️ Preview screenshot');
+    expect(body).toContain(
+      'src="https://image.thum.io/get/width/600/maxAge/1/https://owner-repo-preview-pr-1.surge.sh"',
+    );
+  });
+
+  it('omits the screenshot when screenshot is not enabled', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'success' });
+    expect(body).not.toContain('🖼️ Preview screenshot');
+  });
+
+  it('omits the screenshot on non-success statuses even when enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      screenshot: true,
+    });
+    expect(body).not.toContain('🖼️ Preview screenshot');
+  });
+
   it('renders a building card without build time', () => {
     const body = getCommentBody({ ...baseOptions, status: 'building' });
     expect(body).toContain('## ⚡️ Deploying preview…');
@@ -182,6 +376,24 @@ describe('getCommentBody', () => {
       logTail: 'irrelevant output',
     });
     expect(body).not.toContain('📋 Build log');
+  });
+
+  it('appends the Lighthouse block on success when provided', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      lighthouse: '<!-- lh -->LIGHTHOUSE-BLOCK',
+    });
+    expect(body).toContain('LIGHTHOUSE-BLOCK');
+  });
+
+  it('ignores the Lighthouse block on non-success statuses', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      lighthouse: 'LIGHTHOUSE-BLOCK',
+    });
+    expect(body).not.toContain('LIGHTHOUSE-BLOCK');
   });
 
   it('renders a destroy card', () => {
