@@ -205,7 +205,9 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatScreenshot = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatScreenshot = exports.formatSizeDiff = exports.formatBytes = exports.measureDist = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+const promises_1 = __nccwpck_require__(1455);
+const node_path_1 = __nccwpck_require__(6760);
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -241,6 +243,85 @@ const formatQRCode = ({ previewUrl, size = 120, }) => {
     return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 exports.formatQRCode = formatQRCode;
+/**
+ * Recursively measures the total byte size and file count of a directory.
+ * Symlinks are not followed and unreadable entries are skipped so a single
+ * odd file can never crash the whole report. Returns zeroes when the directory
+ * is missing or cannot be read.
+ */
+const measureDist = (dir) => __awaiter(void 0, void 0, void 0, function* () {
+    let bytes = 0;
+    let files = 0;
+    const walk = (current) => __awaiter(void 0, void 0, void 0, function* () {
+        let entries;
+        try {
+            entries = yield (0, promises_1.readdir)(current, { withFileTypes: true });
+        }
+        catch (_a) {
+            return;
+        }
+        for (const entry of entries) {
+            const full = (0, node_path_1.join)(current, entry.name);
+            if (entry.isDirectory()) {
+                // Skip heavy, non-artifact directories so a misconfigured `dist`
+                // (e.g. `.` or empty) doesn't traverse the whole workspace.
+                if (entry.name === 'node_modules' || entry.name === '.git') {
+                    continue;
+                }
+                yield walk(full);
+            }
+            else if (entry.isFile()) {
+                try {
+                    const info = yield (0, promises_1.stat)(full);
+                    bytes += info.size;
+                    files += 1;
+                }
+                catch (_b) {
+                    // Skip entries we cannot stat (e.g. broken symlinks).
+                }
+            }
+        }
+    });
+    yield walk(dir);
+    return { bytes, files };
+});
+exports.measureDist = measureDist;
+/**
+ * Formats a byte count into a compact human-readable string, e.g. `1.2 MB`.
+ */
+const formatBytes = (bytes) => {
+    if (!Number.isFinite(bytes) || bytes <= 0) {
+        return '0 B';
+    }
+    const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+    // Clamp to [0, last unit] so a sub-1 byte value can't produce units[-1].
+    const exponent = Math.max(0, Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1));
+    const value = bytes / Math.pow(1024, exponent);
+    // Whole bytes have no decimals; everything else keeps one for readability.
+    const formatted = exponent === 0 ? `${value}` : value.toFixed(1);
+    return `${formatted} ${units[exponent]}`;
+};
+exports.formatBytes = formatBytes;
+/**
+ * Renders the size delta against a previous deployment, e.g. `(+1.2 KB ⬆️)`.
+ * Returns an empty string when there is nothing meaningful to compare.
+ */
+const formatSizeDiff = (current, previous) => {
+    if (!Number.isFinite(current) ||
+        current < 0 ||
+        typeof previous !== 'number' ||
+        previous < 0) {
+        return '';
+    }
+    const delta = current - previous;
+    if (delta === 0) {
+        return ' (no change)';
+    }
+    const arrow = delta > 0 ? '⬆️' : '⬇️';
+    const sign = delta > 0 ? '+' : '-';
+    return ` (${sign}${(0, exports.formatBytes)(Math.abs(delta))} ${arrow})`;
+};
+exports.formatSizeDiff = formatSizeDiff;
 /**
  * Builds a screenshot thumbnail of the live preview's landing page, linking to
  * the page itself. Rendered by the free thum.io service, so — like the QR code
@@ -306,11 +387,14 @@ const isPreviousDeployment = (value) => {
         return false;
     }
     const v = value;
+    const sizeIsValid = (n) => n === undefined || (typeof n === 'number' && Number.isFinite(n) && n >= 0);
     return (typeof v.status === 'string' &&
         v.status in STATUS_META &&
         isNonEmptyString(v.shortSha) &&
         isNonEmptyString(v.previewUrl) &&
-        isNonEmptyString(v.updatedAt));
+        isNonEmptyString(v.updatedAt) &&
+        sizeIsValid(v.bytes) &&
+        sizeIsValid(v.files));
 };
 /**
  * Recovers the previous deployment snapshot from an existing comment body.
@@ -351,7 +435,7 @@ const PREVIOUS_BADGE = {
  * details, so the header stays meaningful. A previous deployment, when
  * provided, is surfaced below the card and re-embedded for the next run.
  */
-const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, lighthouse, screenshot, }) => {
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, dist, lighthouse, screenshot, }) => {
     var _a;
     const meta = STATUS_META[status];
     const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
@@ -368,6 +452,15 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     }
     if (status === 'success' && typeof duration === 'number') {
         lines.push({ label: '⏱️ Build time', value: `<code>${duration}s</code>` });
+    }
+    // Report the built artifact size and, when a previous size is known, the
+    // delta against it — a cheap regression signal right in the comment.
+    if (status === 'success' && dist) {
+        const diff = (0, exports.formatSizeDiff)(dist.bytes, previous === null || previous === void 0 ? void 0 : previous.bytes);
+        lines.push({
+            label: '📦 Size',
+            value: `<code>${(0, exports.formatBytes)(dist.bytes)}</code>${diff} · ${dist.files} files`,
+        });
     }
     lines.push({
         label: '🪵 Logs',
@@ -423,7 +516,20 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         const prevPreview = `<a href="https://${previous.previewUrl}">open ↗</a>`;
         parts.push(`<sub>↩️ Previous: ${badge} <code>${previous.shortSha}</code> · ${previous.previewUrl} (${prevPreview}) · ${previous.updatedAt} UTC</sub>`, '');
     }
-    parts.push((0, exports.encodeDeploymentMeta)({ status, shortSha, previewUrl, updatedAt }), (0, exports.getCommentFooter)());
+    // Carry the artifact size forward in the snapshot. On a success deploy we
+    // embed the freshly measured size; on the interim building comment there is
+    // no measurement, so we preserve the previous deployment's size instead —
+    // otherwise the building comment would wipe the baseline the next success
+    // comment needs to render a size delta.
+    const snapshotSize = dist
+        ? { bytes: dist.bytes, files: dist.files }
+        : (previous === null || previous === void 0 ? void 0 : previous.bytes) !== undefined
+            ? { bytes: previous.bytes, files: previous.files }
+            : {};
+    parts.push((0, exports.encodeDeploymentMeta)(Object.assign({ status,
+        shortSha,
+        previewUrl,
+        updatedAt }, snapshotSize)), (0, exports.getCommentFooter)());
     return parts.join('\n');
 };
 exports.getCommentBody = getCommentBody;
@@ -878,13 +984,18 @@ function main() {
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
+            // Measure the deployed artifact so the comment can report its size and,
+            // by reading the previous snapshot from the existing comment, a delta.
+            const distStats = yield (0, helpers_1.measureDist)(`./${dist}`);
+            core.info(`Artifact size: ${distStats.bytes} bytes, ${distStats.files} files`);
             yield publishCheckRun('success');
             // Post the success comment immediately so "Preview is ready" never waits on
-            // the optional, slow Lighthouse audit.
-            const successBody = (extra) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
+            // the optional, slow Lighthouse audit. The builder reads the existing
+            // comment body to recover the previous deployment for the size delta.
+            const successBody = (extra) => (previousBody) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
                 buildingLogUrl,
                 duration,
-                screenshot }, extra));
+                screenshot, dist: distStats, previous: (0, helpers_1.parsePreviousDeployment)(previousBody) }, extra));
             // Await the first comment so the in-place edit below can't race it (both
             // resolve the same sticky comment).
             yield commentIfNotForkedRepo(successBody());
@@ -33590,6 +33701,22 @@ module.exports = require("node:crypto");
 
 "use strict";
 module.exports = require("node:events");
+
+/***/ }),
+
+/***/ 1455:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:fs/promises");
+
+/***/ }),
+
+/***/ 6760:
+/***/ ((module) => {
+
+"use strict";
+module.exports = require("node:path");
 
 /***/ }),
 

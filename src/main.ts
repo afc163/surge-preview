@@ -6,6 +6,7 @@ import { comment } from './commentToPullRequest';
 import {
   execSurgeCommand,
   getCommentBody,
+  measureDist,
   parsePreviousDeployment,
 } from './helpers';
 import {
@@ -279,21 +280,32 @@ async function main() {
       command: ['surge', `./${dist}`, url, `--token`, surgeToken],
     });
 
+    // Measure the deployed artifact so the comment can report its size and,
+    // by reading the previous snapshot from the existing comment, a delta.
+    const distStats = await measureDist(`./${dist}`);
+    core.info(
+      `Artifact size: ${distStats.bytes} bytes, ${distStats.files} files`,
+    );
+
     await publishCheckRun('success');
 
     // Post the success comment immediately so "Preview is ready" never waits on
-    // the optional, slow Lighthouse audit.
-    const successBody = (extra?: { lighthouse?: string }) =>
-      getCommentBody({
-        status: 'success',
-        previewUrl: url,
-        gitCommitSha: commitSha,
-        commitUrl,
-        buildingLogUrl,
-        duration,
-        screenshot,
-        ...extra,
-      });
+    // the optional, slow Lighthouse audit. The builder reads the existing
+    // comment body to recover the previous deployment for the size delta.
+    const successBody =
+      (extra?: { lighthouse?: string }) => (previousBody?: string) =>
+        getCommentBody({
+          status: 'success',
+          previewUrl: url,
+          gitCommitSha: commitSha,
+          commitUrl,
+          buildingLogUrl,
+          duration,
+          screenshot,
+          dist: distStats,
+          previous: parsePreviousDeployment(previousBody),
+          ...extra,
+        });
     // Await the first comment so the in-place edit below can't race it (both
     // resolve the same sticky comment).
     await commentIfNotForkedRepo(successBody());
