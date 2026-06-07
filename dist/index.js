@@ -1,6 +1,61 @@
 require('./sourcemap-register.js');/******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
+/***/ 9475:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.getCheckRunName = exports.getCheckRunState = void 0;
+const CHECK_RUN_STATE = {
+    building: () => ({
+        status: 'in_progress',
+        output: {
+            title: '⚡️ Deploying preview…',
+            summary: 'The preview deployment is in progress.',
+        },
+    }),
+    success: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'success',
+        output: {
+            title: '✅ Preview is ready',
+            summary: `The preview is live at https://${previewUrl}`,
+        },
+    }),
+    fail: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'failure',
+        output: {
+            title: '❌ Deploy failed',
+            summary: `The preview deployment to https://${previewUrl} failed.`,
+        },
+    }),
+    destroy: (previewUrl) => ({
+        status: 'completed',
+        conclusion: 'neutral',
+        output: {
+            title: '♻️ Preview destroyed',
+            summary: `The preview at https://${previewUrl} has been torn down.`,
+        },
+    }),
+};
+/**
+ * Maps a deployment status onto the GitHub check run fields (status,
+ * conclusion and output). Kept as a pure function so the mapping can be tested
+ * without hitting the API.
+ */
+const getCheckRunState = (status, previewUrl) => CHECK_RUN_STATE[status](previewUrl);
+exports.getCheckRunState = getCheckRunState;
+// The name shown for the check on the PR. Includes the job so multiple preview
+// jobs on the same commit produce distinct checks.
+const getCheckRunName = (job) => `surge-preview${job ? ` (${job})` : ''}`;
+exports.getCheckRunName = getCheckRunName;
+
+
+/***/ }),
+
 /***/ 9661:
 /***/ (function(__unused_webpack_module, exports) {
 
@@ -423,13 +478,14 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(7484));
 const exec_1 = __nccwpck_require__(5236);
 const github = __importStar(__nccwpck_require__(3228));
+const checkRun_1 = __nccwpck_require__(9475);
 const commentToPullRequest_1 = __nccwpck_require__(618);
 const helpers_1 = __nccwpck_require__(9761);
 let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -442,7 +498,8 @@ function main() {
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
-        const screenshot = ((_b = core.getInput('screenshot')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
+        const setCommitStatus = ((_b = core.getInput('setCommitStatus')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
+        const screenshot = ((_c = core.getInput('screenshot')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
@@ -455,11 +512,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_d = (_c = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _c === void 0 ? void 0 : _c.head) === null || _d === void 0 ? void 0 : _d.sha) ||
-            ((_e = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _e === void 0 ? void 0 : _e.head_sha);
+            ((_e = (_d = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _d === void 0 ? void 0 : _d.head) === null || _e === void 0 ? void 0 : _e.sha) ||
+            ((_f = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _f === void 0 ? void 0 : _f.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head}`);
-        const fromForkedRepo = (_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head}`);
+        const fromForkedRepo = (_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -515,6 +572,48 @@ function main() {
         const repoOwner = github.context.repo.owner.replace(/\./g, '-');
         const repoName = github.context.repo.repo.replace(/\./g, '-');
         const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
+        // Publishes the deployment as a commit check run so the preview shows up in
+        // the PR checks even when triggered by a `workflow_run` event. Opt-in via
+        // `setCommitStatus` because it needs `checks: write`. Best-effort: a failure
+        // here (e.g. missing permission) must never break the deployment, so errors
+        // are only logged. The created check run id is reused to update the same
+        // check as the status transitions building → success/fail.
+        let previewCheckRunId;
+        const publishCheckRun = (status) => __awaiter(this, void 0, void 0, function* () {
+            if (!setCommitStatus) {
+                return;
+            }
+            const state = (0, checkRun_1.getCheckRunState)(status, url);
+            try {
+                if (previewCheckRunId === undefined) {
+                    const created = yield octokit.rest.checks.create({
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        name: (0, checkRun_1.getCheckRunName)(job),
+                        head_sha: commitSha,
+                        details_url: buildingLogUrl,
+                        status: state.status,
+                        conclusion: state.conclusion,
+                        output: state.output,
+                    });
+                    previewCheckRunId = created.data.id;
+                }
+                else {
+                    yield octokit.rest.checks.update({
+                        owner: github.context.repo.owner,
+                        repo: github.context.repo.repo,
+                        check_run_id: previewCheckRunId,
+                        details_url: buildingLogUrl,
+                        status: state.status,
+                        conclusion: state.conclusion,
+                        output: state.output,
+                    });
+                }
+            }
+            catch (err) {
+                core.warning(`Unable to publish commit check run: ${err instanceof Error ? err.message : String(err)}`);
+            }
+        });
         fail = (err) => {
             core.info('error message:');
             core.info(JSON.stringify(err, null, 2));
@@ -525,6 +624,8 @@ function main() {
                 commitUrl,
                 buildingLogUrl,
             }));
+            // Best-effort; fail() is sync so we don't await, but the call is fired.
+            void publishCheckRun('fail');
             if (failOnError) {
                 core.setFailed(err.message);
             }
@@ -548,8 +649,8 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_h = data === null || data === void 0 ? void 0 : data.check_runs) === null || _h === void 0 ? void 0 : _h.length) >= 0) {
-            const checkRun = (_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.find((item) => item.name === job);
+        if (((_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.length) >= 0) {
+            const checkRun = (_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         if (checkRunId) {
@@ -563,6 +664,7 @@ function main() {
                 yield (0, helpers_1.execSurgeCommand)({
                     command: ['surge', 'teardown', url, `--token`, surgeToken],
                 });
+                yield publishCheckRun('destroy');
                 return commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
                     status: 'destroy',
                     previewUrl: url,
@@ -579,6 +681,7 @@ function main() {
         }
         // While a new build is running, carry forward the previous deployment that
         // is still live, recovered from the existing comment body.
+        yield publishCheckRun('building');
         commentIfNotForkedRepo((previousBody) => (0, helpers_1.getCommentBody)({
             status: 'building',
             previewUrl: url,
@@ -606,6 +709,7 @@ function main() {
             yield (0, helpers_1.execSurgeCommand)({
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
+            yield publishCheckRun('success');
             commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
                 status: 'success',
                 previewUrl: url,
