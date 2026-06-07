@@ -18,6 +18,8 @@
 [license-image]: https://img.shields.io/github/license/afc163/surge-preview
 [license-url]: https://github.com/afc163/surge-preview/blob/main/LICENSE
 
+English | [简体中文](./README.zh-CN.md)
+
 </div>
 
 <table>
