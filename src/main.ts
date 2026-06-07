@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 import { exec } from '@actions/exec';
 import * as github from '@actions/github';
+import { getCheckRunName, getCheckRunState } from './checkRun';
 import { comment } from './commentToPullRequest';
 import {
   execSurgeCommand,
@@ -8,6 +9,11 @@ import {
   measureDist,
   parsePreviousDeployment,
 } from './helpers';
+import {
+  fetchLighthouseScores,
+  formatLighthouse,
+  hasAnyScore,
+} from './lighthouse';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -28,6 +34,12 @@ async function main() {
   const dist = core.getInput('dist');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
+  const lighthouse =
+    core.getInput('lighthouse')?.toString().toLowerCase() === 'true';
+  const setCommitStatus =
+    core.getInput('setCommitStatus')?.toString().toLowerCase() === 'true';
+  const screenshot =
+    core.getInput('screenshot')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -83,13 +95,13 @@ async function main() {
 
   const commentIfNotForkedRepo = (
     message: string | ((previousBody?: string) => string),
-  ) => {
+  ): Promise<void> => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
       core.info('PR created from a forked repository, so skip PR comment');
-      return;
+      return Promise.resolve();
     }
-    comment({
+    return comment({
       repo: github.context.repo,
       number: prNumber,
       message,
@@ -111,6 +123,53 @@ async function main() {
   const repoName = github.context.repo.repo.replace(/\./g, '-');
   const url = `${repoOwner}-${repoName}-${job}-pr-${prNumber}.surge.sh`;
 
+  // Publishes the deployment as a commit check run so the preview shows up in
+  // the PR checks even when triggered by a `workflow_run` event. Opt-in via
+  // `setCommitStatus` because it needs `checks: write`. Best-effort: a failure
+  // here (e.g. missing permission) must never break the deployment, so errors
+  // are only logged. The created check run id is reused to update the same
+  // check as the status transitions building → success/fail.
+  let previewCheckRunId: number | undefined;
+  const publishCheckRun = async (
+    status: 'building' | 'success' | 'fail' | 'destroy',
+  ): Promise<void> => {
+    if (!setCommitStatus) {
+      return;
+    }
+    const state = getCheckRunState(status, url);
+    try {
+      if (previewCheckRunId === undefined) {
+        const created = await octokit.rest.checks.create({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          name: getCheckRunName(job),
+          head_sha: commitSha,
+          details_url: buildingLogUrl,
+          status: state.status,
+          conclusion: state.conclusion,
+          output: state.output,
+        });
+        previewCheckRunId = created.data.id;
+      } else {
+        await octokit.rest.checks.update({
+          owner: github.context.repo.owner,
+          repo: github.context.repo.repo,
+          check_run_id: previewCheckRunId,
+          details_url: buildingLogUrl,
+          status: state.status,
+          conclusion: state.conclusion,
+          output: state.output,
+        });
+      }
+    } catch (err) {
+      core.warning(
+        `Unable to publish commit check run: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      );
+    }
+  };
+
   fail = (err: Error) => {
     core.info('error message:');
     core.info(JSON.stringify(err, null, 2));
@@ -123,6 +182,8 @@ async function main() {
         buildingLogUrl,
       }),
     );
+    // Best-effort; fail() is sync so we don't await, but the call is fired.
+    void publishCheckRun('fail');
     if (failOnError) {
       core.setFailed(err.message);
     }
@@ -168,6 +229,7 @@ async function main() {
         command: ['surge', 'teardown', url, `--token`, surgeToken],
       });
 
+      await publishCheckRun('destroy');
       return commentIfNotForkedRepo(
         getCommentBody({
           status: 'destroy',
@@ -186,6 +248,7 @@ async function main() {
 
   // While a new build is running, carry forward the previous deployment that
   // is still live, recovered from the existing comment body.
+  await publishCheckRun('building');
   commentIfNotForkedRepo((previousBody) =>
     getCommentBody({
       status: 'building',
@@ -224,18 +287,41 @@ async function main() {
       `Artifact size: ${distStats.bytes} bytes, ${distStats.files} files`,
     );
 
-    commentIfNotForkedRepo((previousBody) =>
-      getCommentBody({
-        status: 'success',
-        previewUrl: url,
-        gitCommitSha: commitSha,
-        commitUrl,
-        buildingLogUrl,
-        duration,
-        dist: distStats,
-        previous: parsePreviousDeployment(previousBody),
-      }),
-    );
+    await publishCheckRun('success');
+
+    // Post the success comment immediately so "Preview is ready" never waits on
+    // the optional, slow Lighthouse audit. The builder reads the existing
+    // comment body to recover the previous deployment for the size delta.
+    const successBody =
+      (extra?: { lighthouse?: string }) => (previousBody?: string) =>
+        getCommentBody({
+          status: 'success',
+          previewUrl: url,
+          gitCommitSha: commitSha,
+          commitUrl,
+          buildingLogUrl,
+          duration,
+          screenshot,
+          dist: distStats,
+          previous: parsePreviousDeployment(previousBody),
+          ...extra,
+        });
+    // Await the first comment so the in-place edit below can't race it (both
+    // resolve the same sticky comment).
+    await commentIfNotForkedRepo(successBody());
+
+    // Optionally run Lighthouse (via PageSpeed Insights) against the live
+    // preview, then edit the comment in place to append the scores. Best-effort:
+    // a failure here yields no scores and never affects the deployment result.
+    if (lighthouse) {
+      core.info('Fetching Lighthouse scores…');
+      const scores = await fetchLighthouseScores(`https://${url}`);
+      if (hasAnyScore(scores)) {
+        await commentIfNotForkedRepo(
+          successBody({ lighthouse: formatLighthouse(scores) }),
+        );
+      }
+    }
   } catch (err) {
     if (err instanceof Error) {
       fail?.(err);

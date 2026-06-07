@@ -13,6 +13,8 @@ const debug = jest.fn();
 const warning = jest.fn();
 
 const listForRef = jest.fn();
+const createCheck = jest.fn();
+const updateCheck = jest.fn();
 const exec = jest.fn();
 const comment = jest.fn();
 
@@ -38,7 +40,7 @@ jest.mock('@actions/github', () => ({
   },
   getOctokit: () => ({
     rest: {
-      checks: { listForRef },
+      checks: { listForRef, create: createCheck, update: updateCheck },
       search: { issuesAndPullRequests: jest.fn() },
       issues: {},
     },
@@ -58,6 +60,7 @@ function setupPullRequestContext(fork = false) {
   inputs.github_token = 'gh-token';
   inputs.dist = 'public';
   inputs.teardown = 'false';
+  inputs.setCommitStatus = '';
   inputs.failOnError = '';
   inputs.build = 'npm run build';
   getInput.mockImplementation((name: string) => inputs[name] ?? '');
@@ -144,5 +147,57 @@ describe('main failure path (TDZ regression)', () => {
     expect(setFailed).toHaveBeenCalledWith(
       'Input required and not supplied: github_token',
     );
+  });
+});
+
+describe('commit check run', () => {
+  it('does not touch the checks API when setCommitStatus is off', async () => {
+    setupPullRequestContext();
+    listForRef.mockResolvedValue({ data: { check_runs: [] } });
+    exec.mockResolvedValue(0);
+
+    await runMain();
+
+    expect(createCheck).not.toHaveBeenCalled();
+    expect(updateCheck).not.toHaveBeenCalled();
+  });
+
+  it('creates an in-progress check then updates it to success', async () => {
+    setupPullRequestContext();
+    inputs.setCommitStatus = 'true';
+    listForRef.mockResolvedValue({ data: { check_runs: [] } });
+    exec.mockResolvedValue(0);
+    createCheck.mockResolvedValue({ data: { id: 999 } });
+    updateCheck.mockResolvedValue({ data: {} });
+
+    await runMain();
+
+    // building → create with in_progress
+    expect(createCheck).toHaveBeenCalledTimes(1);
+    expect(createCheck.mock.calls[0][0]).toMatchObject({
+      head_sha: 'deadbeef',
+      status: 'in_progress',
+    });
+    // success → update the same check run id to a completed success
+    expect(updateCheck).toHaveBeenCalledTimes(1);
+    expect(updateCheck.mock.calls[0][0]).toMatchObject({
+      check_run_id: 999,
+      status: 'completed',
+      conclusion: 'success',
+    });
+  });
+
+  it('swallows checks API errors without failing the deployment', async () => {
+    setupPullRequestContext();
+    inputs.setCommitStatus = 'true';
+    listForRef.mockResolvedValue({ data: { check_runs: [] } });
+    exec.mockResolvedValue(0);
+    createCheck.mockRejectedValue(new Error('Resource not accessible'));
+
+    await runMain();
+
+    // a warning is logged, but the action is not marked failed
+    expect(warning).toHaveBeenCalled();
+    expect(setFailed).not.toHaveBeenCalled();
   });
 });

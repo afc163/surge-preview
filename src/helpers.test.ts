@@ -5,6 +5,7 @@ import {
   formatBytes,
   formatImage,
   formatQRCode,
+  formatScreenshot,
   formatSizeDiff,
   getCommentBody,
   getCommentFooter,
@@ -140,6 +141,30 @@ describe('measureDist', () => {
   });
 });
 
+describe('formatScreenshot', () => {
+  it('renders a thumbnail with a stable URL and a maxAge refresh modifier', () => {
+    expect(formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' })).toBe(
+      '<a href="https://a-b-pr-1.surge.sh"><img width="600" alt="Preview screenshot" src="https://image.thum.io/get/width/600/maxAge/1/https://a-b-pr-1.surge.sh"></a>',
+    );
+  });
+
+  it('does not use a per-commit query cache-buster (avoids cold placeholder)', () => {
+    const html = formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' });
+    expect(html).not.toContain('?v=');
+  });
+
+  it('honours a custom width and maxAge', () => {
+    const html = formatScreenshot({
+      previewUrl: 'a-b-pr-1.surge.sh',
+      width: 800,
+      maxAgeHours: 0,
+    });
+    expect(html).toContain('width="800"');
+    expect(html).toContain('/width/800/');
+    expect(html).toContain('/maxAge/0/');
+  });
+});
+
 describe('getCommentBody', () => {
   const baseOptions = {
     previewUrl: 'owner-repo-preview-pr-1.surge.sh',
@@ -255,6 +280,32 @@ describe('getCommentBody', () => {
     expect(successBody).toContain('(+1.0 KB ⬆️)');
   });
 
+  it('embeds a screenshot on success when screenshot is enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      screenshot: true,
+    });
+    expect(body).toContain('🖼️ Preview screenshot');
+    expect(body).toContain(
+      'src="https://image.thum.io/get/width/600/maxAge/1/https://owner-repo-preview-pr-1.surge.sh"',
+    );
+  });
+
+  it('omits the screenshot when screenshot is not enabled', () => {
+    const body = getCommentBody({ ...baseOptions, status: 'success' });
+    expect(body).not.toContain('🖼️ Preview screenshot');
+  });
+
+  it('omits the screenshot on non-success statuses even when enabled', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      screenshot: true,
+    });
+    expect(body).not.toContain('🖼️ Preview screenshot');
+  });
+
   it('renders a building card without build time', () => {
     const body = getCommentBody({ ...baseOptions, status: 'building' });
     expect(body).toContain('## ⚡️ Deploying preview…');
@@ -271,6 +322,24 @@ describe('getCommentBody', () => {
     const body = getCommentBody({ ...baseOptions, status: 'fail' });
     expect(body).toContain('## ❌ Deploy failed');
     expect(body).toContain('<s>https://owner-repo-preview-pr-1.surge.sh</s>');
+  });
+
+  it('appends the Lighthouse block on success when provided', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      lighthouse: '<!-- lh -->LIGHTHOUSE-BLOCK',
+    });
+    expect(body).toContain('LIGHTHOUSE-BLOCK');
+  });
+
+  it('ignores the Lighthouse block on non-success statuses', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      lighthouse: 'LIGHTHOUSE-BLOCK',
+    });
+    expect(body).not.toContain('LIGHTHOUSE-BLOCK');
   });
 
   it('renders a destroy card', () => {
