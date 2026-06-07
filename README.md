@@ -34,8 +34,22 @@ Compared to Netlify / Vercel:
 - 🆓 **It is free.**
 - 🧩 **It supports multiple preview jobs.**
 
+## 🎁 Features
+
+Every pull request gets a rich, self-updating preview comment. Beyond the live preview link, you can opt into:
+
+- 📱 **Mobile QR code** — scan the preview URL straight from the comment.
+- 🖼️ **Preview screenshot** — see the deployed page inline (via [thum.io](https://www.thum.io/)) with [`screenshot`](#-inputs).
+- 🔦 **Lighthouse scores** — performance / accessibility / best-practices / SEO, via [`lighthouse`](#-inputs).
+- 📦 **Artifact size report** — built `dist` size and file count, with a diff against the previous deployment.
+- 📋 **Failure log** — on a failed build/deploy, the tail of the log is shown in the comment so you don't have to dig through the Actions logs.
+- ✅ **Commit check run** — surface the deployment as a PR check with [`setCommitStatus`](#-inputs), useful for the `workflow_run` flow.
+
+All extras are off by default and add no new dependency.
+
 ## 📖 Table of Contents
 
+- [Features](#-features)
 - [Usage](#-usage)
   - [Multiple Jobs](#multiple-jobs)
   - [Teardown](#teardown)
@@ -307,6 +321,9 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `setCommitStatus` | Publish the deployment as a commit check run so it shows up in the PR checks (requires `checks: write`). Especially useful for the `workflow_run` flow, where the deployment otherwise has no status on the commit. | `false`                                                                                            |
 | `screenshot`    | Embed a screenshot of the deployed preview in the PR comment (rendered via the [thum.io](https://www.thum.io/) service).           | `false`                                                                                                                                  |
 | `lighthouse`    | Run Lighthouse (via the [PageSpeed Insights](https://developers.google.com/speed/docs/insights/v5/get-started) API) against the deployed preview and post the scores in the PR comment. | `false`                                                              |
+
+> [!TIP]
+> The keyless PageSpeed Insights quota is small and shared across GitHub's runner IPs, so `lighthouse` may occasionally report no scores. Set a `PAGESPEED_API_KEY` (or `PSI_API_KEY`) [env var](https://docs.github.com/en/actions/learn-github-actions/variables) on the step to lift the limit — [get a key here](https://developers.google.com/speed/docs/insights/v5/get-started#APIKey).
 
 ## 📤 Outputs
 
