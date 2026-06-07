@@ -82,9 +82,13 @@ function setupPullRequestContext(fork = false) {
 async function runMain() {
   await jest.isolateModulesAsync(async () => {
     require('./main');
-    await flush();
-    await flush();
-    await flush();
+    // Flush enough microtask turns for the full async chain (build → deploy →
+    // measure → check run → comment → optional lighthouse) to settle, even on
+    // slower CI where too few turns left the later steps (e.g. the success
+    // check-run update) unfinished.
+    for (let i = 0; i < 15; i += 1) {
+      await flush();
+    }
   });
 }
 
