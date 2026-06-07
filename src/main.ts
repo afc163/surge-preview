@@ -30,6 +30,8 @@ async function main() {
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
   const setCommitStatus =
     core.getInput('setCommitStatus')?.toString().toLowerCase() === 'true';
+  const screenshot =
+    core.getInput('screenshot')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -279,6 +281,7 @@ async function main() {
         commitUrl,
         buildingLogUrl,
         duration,
+        screenshot,
       }),
     );
   } catch (err) {

@@ -205,7 +205,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatScreenshot = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const exec_1 = __nccwpck_require__(5236);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, }) {
     let myOutput = '';
@@ -241,6 +241,27 @@ const formatQRCode = ({ previewUrl, size = 120, }) => {
     return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 exports.formatQRCode = formatQRCode;
+/**
+ * Builds a screenshot thumbnail of the live preview's landing page, linking to
+ * the page itself. Rendered by the free thum.io service, so — like the QR code
+ * — it needs no extra dependency or image hosting. The thumbnail is only a
+ * convenience; if the service is unreachable the image simply fails to load
+ * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
+ */
+const formatScreenshot = ({ previewUrl, width = 600, maxAgeHours = 1, }) => {
+    const target = `https://${previewUrl}`;
+    const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+    return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
+};
+exports.formatScreenshot = formatScreenshot;
 // Default screenshots hosted on GitHub user-images. Kept identical to the
 // previous inline URLs so existing behaviour is preserved.
 const STATUS_META = {
@@ -330,7 +351,7 @@ const PREVIOUS_BADGE = {
  * details, so the header stays meaningful. A previous deployment, when
  * provided, is surfaced below the card and re-embedded for the next run.
  */
-const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, }) => {
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, screenshot, }) => {
     var _a;
     const meta = STATUS_META[status];
     const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
@@ -386,6 +407,11 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         '</table>',
     ].join('\n');
     const parts = [meta.title, '', table, ''];
+    // On success, optionally embed a screenshot of the live preview's landing
+    // page so reviewers see the change without opening the link.
+    if (status === 'success' && screenshot) {
+        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
+    }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
         // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
@@ -459,7 +485,7 @@ let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -473,6 +499,7 @@ function main() {
         const dist = core.getInput('dist');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
         const setCommitStatus = ((_b = core.getInput('setCommitStatus')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
+        const screenshot = ((_c = core.getInput('screenshot')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
@@ -485,11 +512,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_d = (_c = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _c === void 0 ? void 0 : _c.head) === null || _d === void 0 ? void 0 : _d.sha) ||
-            ((_e = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _e === void 0 ? void 0 : _e.head_sha);
+            ((_e = (_d = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _d === void 0 ? void 0 : _d.head) === null || _e === void 0 ? void 0 : _e.sha) ||
+            ((_f = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _f === void 0 ? void 0 : _f.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_f = payload.pull_request) === null || _f === void 0 ? void 0 : _f.head}`);
-        const fromForkedRepo = (_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head}`);
+        const fromForkedRepo = (_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -622,8 +649,8 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_h = data === null || data === void 0 ? void 0 : data.check_runs) === null || _h === void 0 ? void 0 : _h.length) >= 0) {
-            const checkRun = (_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.find((item) => item.name === job);
+        if (((_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.length) >= 0) {
+            const checkRun = (_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         if (checkRunId) {
@@ -690,6 +717,7 @@ function main() {
                 commitUrl,
                 buildingLogUrl,
                 duration,
+                screenshot,
             }));
         }
         catch (err) {

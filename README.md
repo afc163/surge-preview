@@ -22,8 +22,8 @@
 
 <table>
   <tr>
-    <td width="50%"><img alt="PR preview comment" src="https://github.com/user-attachments/assets/e247df64-975d-4ee3-90ee-13eb994b3f17"></td>
-    <td width="50%"><img alt="Preview website" src="https://github.com/user-attachments/assets/a3370d1c-fca1-4142-9949-a3b54bff2775"></td>
+    <td width="55%"><img alt="PR preview comment" src="https://github.com/user-attachments/assets/e247df64-975d-4ee3-90ee-13eb994b3f17"></td>
+    <td width="45%"><img alt="Preview website" src="https://github.com/user-attachments/assets/068ad690-3b7d-4ef4-a80c-a3663d99d5e7"></td>
   </tr>
 </table>
 
@@ -305,6 +305,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
 | `setCommitStatus` | Publish the deployment as a commit check run so it shows up in the PR checks (requires `checks: write`). Especially useful for the `workflow_run` flow, where the deployment otherwise has no status on the commit. | `false`                                                                                            |
+| `screenshot`    | Embed a screenshot of the deployed preview in the PR comment (rendered via the [thum.io](https://www.thum.io/) service).           | `false`                                                                                                                                  |
 
 ## 📤 Outputs
 

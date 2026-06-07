@@ -16,6 +16,7 @@ jobs:
           surge_token: ${{ secrets.SURGE_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           teardown: 'true'
+          screenshot: 'true'
           dist: public/preview
           build: |
             mkdir -p public/preview

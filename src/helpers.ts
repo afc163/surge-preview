@@ -59,6 +59,37 @@ export const formatQRCode = ({
   return `<a href="${target}"><img width="${size}" alt="Scan to open preview on mobile" src="${src}"></a>`;
 };
 
+/**
+ * Builds a screenshot thumbnail of the live preview's landing page, linking to
+ * the page itself. Rendered by the free thum.io service, so — like the QR code
+ * — it needs no extra dependency or image hosting. The thumbnail is only a
+ * convenience; if the service is unreachable the image simply fails to load
+ * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
+ */
+export const formatScreenshot = ({
+  previewUrl,
+  width = 600,
+  maxAgeHours = 1,
+}: {
+  // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
+  previewUrl: string;
+  width?: number;
+  // Refresh the thumbnail when the cached capture is older than this many hours.
+  maxAgeHours?: number;
+}) => {
+  const target = `https://${previewUrl}`;
+  const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+  return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
+};
+
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
 
 interface StatusMeta {
@@ -182,6 +213,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // When true, embed a screenshot of the live preview on the success card.
+  screenshot?: boolean;
 }
 
 const formatUpdatedAt = () =>
@@ -209,6 +242,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  screenshot,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
   const shortSha = gitCommitSha?.slice(0, 7) || '';
@@ -278,6 +312,19 @@ export const getCommentBody = ({
   ].join('\n');
 
   const parts = [meta.title, '', table, ''];
+
+  // On success, optionally embed a screenshot of the live preview's landing
+  // page so reviewers see the change without opening the link.
+  if (status === 'success' && screenshot) {
+    parts.push(
+      '<details open><summary>🖼️ Preview screenshot</summary>',
+      '',
+      formatScreenshot({ previewUrl }),
+      '',
+      '</details>',
+      '',
+    );
+  }
 
   if (previous) {
     const badge = PREVIOUS_BADGE[previous.status] ?? '';
