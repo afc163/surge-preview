@@ -213,6 +213,8 @@ export interface CommentBodyOptions {
   imageUrl?: string;
   // Previous deployment to keep visible while a new build is running.
   previous?: PreviousDeployment;
+  // Pre-rendered Lighthouse scores block, appended to the success card.
+  lighthouse?: string;
   // When true, embed a screenshot of the live preview on the success card.
   screenshot?: boolean;
 }
@@ -242,6 +244,7 @@ export const getCommentBody = ({
   duration,
   imageUrl,
   previous,
+  lighthouse,
   screenshot,
 }: CommentBodyOptions): string => {
   const meta = STATUS_META[status];
@@ -324,6 +327,11 @@ export const getCommentBody = ({
       '</details>',
       '',
     );
+  }
+
+  // On success, append the Lighthouse scores block when one was provided.
+  if (status === 'success' && lighthouse) {
+    parts.push(lighthouse, '');
   }
 
   if (previous) {

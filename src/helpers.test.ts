@@ -181,6 +181,24 @@ describe('getCommentBody', () => {
     expect(body).toContain('<s>https://owner-repo-preview-pr-1.surge.sh</s>');
   });
 
+  it('appends the Lighthouse block on success when provided', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'success',
+      lighthouse: '<!-- lh -->LIGHTHOUSE-BLOCK',
+    });
+    expect(body).toContain('LIGHTHOUSE-BLOCK');
+  });
+
+  it('ignores the Lighthouse block on non-success statuses', () => {
+    const body = getCommentBody({
+      ...baseOptions,
+      status: 'building',
+      lighthouse: 'LIGHTHOUSE-BLOCK',
+    });
+    expect(body).not.toContain('LIGHTHOUSE-BLOCK');
+  });
+
   it('renders a destroy card', () => {
     const body = getCommentBody({ ...baseOptions, status: 'destroy' });
     expect(body).toContain('## ♻️ Preview destroyed');

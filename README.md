@@ -306,6 +306,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
 | `setCommitStatus` | Publish the deployment as a commit check run so it shows up in the PR checks (requires `checks: write`). Especially useful for the `workflow_run` flow, where the deployment otherwise has no status on the commit. | `false`                                                                                            |
 | `screenshot`    | Embed a screenshot of the deployed preview in the PR comment (rendered via the [thum.io](https://www.thum.io/) service).           | `false`                                                                                                                                  |
+| `lighthouse`    | Run Lighthouse (via the [PageSpeed Insights](https://developers.google.com/speed/docs/insights/v5/get-started) API) against the deployed preview and post the scores in the PR comment. | `false`                                                              |
 
 ## 📤 Outputs
 

@@ -8,6 +8,11 @@ import {
   getCommentBody,
   parsePreviousDeployment,
 } from './helpers';
+import {
+  fetchLighthouseScores,
+  formatLighthouse,
+  hasAnyScore,
+} from './lighthouse';
 
 let failOnErrorGlobal = false;
 let fail: (err: Error) => void;
@@ -28,6 +33,8 @@ async function main() {
   const dist = core.getInput('dist');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
+  const lighthouse =
+    core.getInput('lighthouse')?.toString().toLowerCase() === 'true';
   const setCommitStatus =
     core.getInput('setCommitStatus')?.toString().toLowerCase() === 'true';
   const screenshot =
@@ -87,13 +94,13 @@ async function main() {
 
   const commentIfNotForkedRepo = (
     message: string | ((previousBody?: string) => string),
-  ) => {
+  ): Promise<void> => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
       core.info('PR created from a forked repository, so skip PR comment');
-      return;
+      return Promise.resolve();
     }
-    comment({
+    return comment({
       repo: github.context.repo,
       number: prNumber,
       message,
@@ -273,7 +280,10 @@ async function main() {
     });
 
     await publishCheckRun('success');
-    commentIfNotForkedRepo(
+
+    // Post the success comment immediately so "Preview is ready" never waits on
+    // the optional, slow Lighthouse audit.
+    const successBody = (extra?: { lighthouse?: string }) =>
       getCommentBody({
         status: 'success',
         previewUrl: url,
@@ -282,8 +292,24 @@ async function main() {
         buildingLogUrl,
         duration,
         screenshot,
-      }),
-    );
+        ...extra,
+      });
+    // Await the first comment so the in-place edit below can't race it (both
+    // resolve the same sticky comment).
+    await commentIfNotForkedRepo(successBody());
+
+    // Optionally run Lighthouse (via PageSpeed Insights) against the live
+    // preview, then edit the comment in place to append the scores. Best-effort:
+    // a failure here yields no scores and never affects the deployment result.
+    if (lighthouse) {
+      core.info('Fetching Lighthouse scores…');
+      const scores = await fetchLighthouseScores(`https://${url}`);
+      if (hasAnyScore(scores)) {
+        await commentIfNotForkedRepo(
+          successBody({ lighthouse: formatLighthouse(scores) }),
+        );
+      }
+    }
   } catch (err) {
     if (err instanceof Error) {
       fail?.(err);

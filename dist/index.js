@@ -351,7 +351,7 @@ const PREVIOUS_BADGE = {
  * details, so the header stays meaningful. A previous deployment, when
  * provided, is surfaced below the card and re-embedded for the next run.
  */
-const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, screenshot, }) => {
+const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingLogUrl, duration, imageUrl, previous, lighthouse, screenshot, }) => {
     var _a;
     const meta = STATUS_META[status];
     const shortSha = (gitCommitSha === null || gitCommitSha === void 0 ? void 0 : gitCommitSha.slice(0, 7)) || '';
@@ -412,6 +412,10 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     if (status === 'success' && screenshot) {
         parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
     }
+    // On success, append the Lighthouse scores block when one was provided.
+    if (status === 'success' && lighthouse) {
+        parts.push(lighthouse, '');
+    }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
         // Use non-URL link text so GitHub's autolinker doesn't wrap the anchor in
@@ -423,6 +427,169 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     return parts.join('\n');
 };
 exports.getCommentBody = getCommentBody;
+
+
+/***/ }),
+
+/***/ 1718:
+/***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
+
+"use strict";
+
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.hasAnyScore = exports.fetchLighthouseScores = exports.formatLighthouse = void 0;
+const core = __importStar(__nccwpck_require__(7484));
+const CATEGORY_LABELS = [
+    { key: 'performance', label: 'Performance' },
+    { key: 'accessibility', label: 'Accessibility' },
+    { key: 'bestPractices', label: 'Best Practices' },
+    { key: 'seo', label: 'SEO' },
+];
+// Lighthouse's own thresholds: >=90 green, >=50 orange, otherwise red.
+const scoreDot = (score) => {
+    if (score === null) {
+        return '⚪';
+    }
+    if (score >= 90) {
+        return '🟢';
+    }
+    if (score >= 50) {
+        return '🟠';
+    }
+    return '🔴';
+};
+/**
+ * Renders the Lighthouse scores as a compact, collapsed table. Returns an empty
+ * string when no category produced a score.
+ */
+const formatLighthouse = (scores) => {
+    const rows = CATEGORY_LABELS.filter(({ key }) => scores[key] !== null).map(({ key, label }) => {
+        const score = scores[key];
+        return `  <tr><td>${scoreDot(score)} ${label}</td><td><code>${score}</code></td></tr>`;
+    });
+    if (rows.length === 0) {
+        return '';
+    }
+    return [
+        '<details><summary>🔦 Lighthouse scores</summary>',
+        '',
+        '<table>',
+        '  <tr><th>Category</th><th>Score</th></tr>',
+        ...rows,
+        '</table>',
+        '',
+        '</details>',
+    ].join('\n');
+};
+exports.formatLighthouse = formatLighthouse;
+// Normalises a PageSpeed Insights category (a 0-1 fraction) into a 0-100
+// integer, or null when the category is missing.
+const toScore = (category) => {
+    if (category &&
+        typeof category === 'object' &&
+        'score' in category &&
+        typeof category.score === 'number') {
+        return Math.round(category.score * 100);
+    }
+    return null;
+};
+/**
+ * Fetches Lighthouse category scores for a URL via the public PageSpeed
+ * Insights API (no API key required for low-volume use). Best-effort: returns
+ * all-null scores when the request fails or the response is malformed, so the
+ * caller can decide whether there is anything worth rendering.
+ */
+const fetchLighthouseScores = (url) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a, _b;
+    const empty = {
+        performance: null,
+        accessibility: null,
+        bestPractices: null,
+        seo: null,
+    };
+    const endpoint = new URL('https://www.googleapis.com/pagespeedonline/v5/runPagespeed');
+    endpoint.searchParams.set('url', url);
+    for (const c of ['performance', 'accessibility', 'best-practices', 'seo']) {
+        endpoint.searchParams.append('category', c);
+    }
+    // An optional API key lifts the strict keyless rate limits that shared CI
+    // runner IPs can otherwise hit.
+    const apiKey = process.env.PAGESPEED_API_KEY || process.env.PSI_API_KEY;
+    if (apiKey) {
+        endpoint.searchParams.set('key', apiKey);
+    }
+    try {
+        // A full Lighthouse audit can take tens of seconds; cap it so a slow or
+        // hung PSI request can't keep the runner waiting too long. The success
+        // comment is posted before this runs, so this only bounds how long we wait
+        // to append the scores.
+        const res = yield fetch(endpoint.toString(), {
+            signal: AbortSignal.timeout(60000),
+        });
+        if (!res.ok) {
+            core.warning(`Lighthouse request failed with status ${res.status}`);
+            return empty;
+        }
+        const data = (yield res.json());
+        const categories = (_b = (_a = data === null || data === void 0 ? void 0 : data.lighthouseResult) === null || _a === void 0 ? void 0 : _a.categories) !== null && _b !== void 0 ? _b : {};
+        return {
+            performance: toScore(categories.performance),
+            accessibility: toScore(categories.accessibility),
+            bestPractices: toScore(categories['best-practices']),
+            seo: toScore(categories.seo),
+        };
+    }
+    catch (err) {
+        core.warning(`Unable to fetch Lighthouse scores: ${err instanceof Error ? err.message : String(err)}`);
+        return empty;
+    }
+});
+exports.fetchLighthouseScores = fetchLighthouseScores;
+// True when at least one category produced a score worth rendering.
+const hasAnyScore = (scores) => Object.values(scores).some((s) => s !== null);
+exports.hasAnyScore = hasAnyScore;
 
 
 /***/ }),
@@ -481,11 +648,12 @@ const github = __importStar(__nccwpck_require__(3228));
 const checkRun_1 = __nccwpck_require__(9475);
 const commentToPullRequest_1 = __nccwpck_require__(618);
 const helpers_1 = __nccwpck_require__(9761);
+const lighthouse_1 = __nccwpck_require__(1718);
 let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -498,8 +666,9 @@ function main() {
         const token = core.getInput('github_token', { required: true });
         const dist = core.getInput('dist');
         const teardown = ((_a = core.getInput('teardown')) === null || _a === void 0 ? void 0 : _a.toString().toLowerCase()) === 'true';
-        const setCommitStatus = ((_b = core.getInput('setCommitStatus')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
-        const screenshot = ((_c = core.getInput('screenshot')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
+        const lighthouse = ((_b = core.getInput('lighthouse')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
+        const setCommitStatus = ((_c = core.getInput('setCommitStatus')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
+        const screenshot = ((_d = core.getInput('screenshot')) === null || _d === void 0 ? void 0 : _d.toString().toLowerCase()) === 'true';
         const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
@@ -512,11 +681,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_e = (_d = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _d === void 0 ? void 0 : _d.head) === null || _e === void 0 ? void 0 : _e.sha) ||
-            ((_f = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _f === void 0 ? void 0 : _f.head_sha);
+            ((_f = (_e = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _e === void 0 ? void 0 : _e.head) === null || _f === void 0 ? void 0 : _f.sha) ||
+            ((_g = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _g === void 0 ? void 0 : _g.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_g = payload.pull_request) === null || _g === void 0 ? void 0 : _g.head}`);
-        const fromForkedRepo = (_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head}`);
+        const fromForkedRepo = (_j = payload.pull_request) === null || _j === void 0 ? void 0 : _j.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -551,9 +720,9 @@ function main() {
             // if it is forked repo, don't comment
             if (fromForkedRepo) {
                 core.info('PR created from a forked repository, so skip PR comment');
-                return;
+                return Promise.resolve();
             }
-            (0, commentToPullRequest_1.comment)({
+            return (0, commentToPullRequest_1.comment)({
                 repo: github.context.repo,
                 number: prNumber,
                 message,
@@ -649,8 +818,8 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // 尝试获取 check_run_id，逻辑不是很严谨
         let checkRunId;
-        if (((_j = data === null || data === void 0 ? void 0 : data.check_runs) === null || _j === void 0 ? void 0 : _j.length) >= 0) {
-            const checkRun = (_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.find((item) => item.name === job);
+        if (((_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.length) >= 0) {
+            const checkRun = (_l = data === null || data === void 0 ? void 0 : data.check_runs) === null || _l === void 0 ? void 0 : _l.find((item) => item.name === job);
             checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
         }
         if (checkRunId) {
@@ -710,15 +879,25 @@ function main() {
                 command: ['surge', `./${dist}`, url, `--token`, surgeToken],
             });
             yield publishCheckRun('success');
-            commentIfNotForkedRepo((0, helpers_1.getCommentBody)({
-                status: 'success',
-                previewUrl: url,
-                gitCommitSha: commitSha,
-                commitUrl,
+            // Post the success comment immediately so "Preview is ready" never waits on
+            // the optional, slow Lighthouse audit.
+            const successBody = (extra) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
                 buildingLogUrl,
                 duration,
-                screenshot,
-            }));
+                screenshot }, extra));
+            // Await the first comment so the in-place edit below can't race it (both
+            // resolve the same sticky comment).
+            yield commentIfNotForkedRepo(successBody());
+            // Optionally run Lighthouse (via PageSpeed Insights) against the live
+            // preview, then edit the comment in place to append the scores. Best-effort:
+            // a failure here yields no scores and never affects the deployment result.
+            if (lighthouse) {
+                core.info('Fetching Lighthouse scores…');
+                const scores = yield (0, lighthouse_1.fetchLighthouseScores)(`https://${url}`);
+                if ((0, lighthouse_1.hasAnyScore)(scores)) {
+                    yield commentIfNotForkedRepo(successBody({ lighthouse: (0, lighthouse_1.formatLighthouse)(scores) }));
+                }
+            }
         }
         catch (err) {
             if (err instanceof Error) {
