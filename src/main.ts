@@ -89,13 +89,13 @@ async function main() {
 
   const commentIfNotForkedRepo = (
     message: string | ((previousBody?: string) => string),
-  ) => {
+  ): Promise<void> => {
     // if it is forked repo, don't comment
     if (fromForkedRepo) {
       core.info('PR created from a forked repository, so skip PR comment');
-      return;
+      return Promise.resolve();
     }
-    comment({
+    return comment({
       repo: github.context.repo,
       number: prNumber,
       message,
@@ -235,7 +235,9 @@ async function main() {
         duration,
         ...extra,
       });
-    commentIfNotForkedRepo(successBody());
+    // Await the first comment so the in-place edit below can't race it (both
+    // resolve the same sticky comment).
+    await commentIfNotForkedRepo(successBody());
 
     // Optionally run Lighthouse (via PageSpeed Insights) against the live
     // preview, then edit the comment in place to append the scores. Best-effort:
@@ -244,7 +246,7 @@ async function main() {
       core.info('Fetching Lighthouse scores…');
       const scores = await fetchLighthouseScores(`https://${url}`);
       if (hasAnyScore(scores)) {
-        commentIfNotForkedRepo(
+        await commentIfNotForkedRepo(
           successBody({ lighthouse: formatLighthouse(scores) }),
         );
       }

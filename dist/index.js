@@ -636,9 +636,9 @@ function main() {
             // if it is forked repo, don't comment
             if (fromForkedRepo) {
                 core.info('PR created from a forked repository, so skip PR comment');
-                return;
+                return Promise.resolve();
             }
-            (0, commentToPullRequest_1.comment)({
+            return (0, commentToPullRequest_1.comment)({
                 repo: github.context.repo,
                 number: prNumber,
                 message,
@@ -753,7 +753,9 @@ function main() {
             const successBody = (extra) => (0, helpers_1.getCommentBody)(Object.assign({ status: 'success', previewUrl: url, gitCommitSha: commitSha, commitUrl,
                 buildingLogUrl,
                 duration }, extra));
-            commentIfNotForkedRepo(successBody());
+            // Await the first comment so the in-place edit below can't race it (both
+            // resolve the same sticky comment).
+            yield commentIfNotForkedRepo(successBody());
             // Optionally run Lighthouse (via PageSpeed Insights) against the live
             // preview, then edit the comment in place to append the scores. Best-effort:
             // a failure here yields no scores and never affects the deployment result.
@@ -761,7 +763,7 @@ function main() {
                 core.info('Fetching Lighthouse scores…');
                 const scores = yield (0, lighthouse_1.fetchLighthouseScores)(`https://${url}`);
                 if ((0, lighthouse_1.hasAnyScore)(scores)) {
-                    commentIfNotForkedRepo(successBody({ lighthouse: (0, lighthouse_1.formatLighthouse)(scores) }));
+                    yield commentIfNotForkedRepo(successBody({ lighthouse: (0, lighthouse_1.formatLighthouse)(scores) }));
                 }
             }
         }
