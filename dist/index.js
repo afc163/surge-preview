@@ -192,11 +192,18 @@ exports.formatQRCode = formatQRCode;
  * — it needs no extra dependency or image hosting. The thumbnail is only a
  * convenience; if the service is unreachable the image simply fails to load
  * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
  */
-const formatScreenshot = ({ previewUrl, width = 600, gitCommitSha, }) => {
-    const cacheBuster = gitCommitSha ? `?v=${gitCommitSha}` : '';
+const formatScreenshot = ({ previewUrl, width = 600, maxAgeHours = 1, }) => {
     const target = `https://${previewUrl}`;
-    const src = `https://image.thum.io/get/width/${width}/${target}${cacheBuster}`;
+    const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
     return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
 };
 exports.formatScreenshot = formatScreenshot;
@@ -348,7 +355,7 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     // On success, optionally embed a screenshot of the live preview's landing
     // page so reviewers see the change without opening the link.
     if (status === 'success' && screenshot) {
-        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl, gitCommitSha }), '', '</details>', '');
+        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
     }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';

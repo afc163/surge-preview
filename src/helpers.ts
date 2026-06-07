@@ -65,22 +65,28 @@ export const formatQRCode = ({
  * — it needs no extra dependency or image hosting. The thumbnail is only a
  * convenience; if the service is unreachable the image simply fails to load
  * and the rest of the comment is unaffected.
+ *
+ * Freshness is handled with thum.io's native `maxAge` modifier (refresh when
+ * the cached image is older than N hours) on a STABLE target URL, rather than a
+ * `?v=<sha>` query cache-buster. A per-commit query string turns every commit
+ * into a brand-new ("cold") thum.io URL, whose first request returns a loading
+ * placeholder instead of the real capture — which is what makes the embedded
+ * image look blank. A stable URL lets thum.io serve the already-rendered
+ * capture, and `maxAge` still keeps it current across a PR's commits.
  */
 export const formatScreenshot = ({
   previewUrl,
   width = 600,
-  gitCommitSha,
+  maxAgeHours = 1,
 }: {
   // Preview host without protocol, e.g. `owner-repo-job-pr-1.surge.sh`.
   previewUrl: string;
   width?: number;
-  // Appended as a cache buster so thum.io re-captures on every new commit
-  // (the preview URL is stable across a PR's commits).
-  gitCommitSha?: string;
+  // Refresh the thumbnail when the cached capture is older than this many hours.
+  maxAgeHours?: number;
 }) => {
-  const cacheBuster = gitCommitSha ? `?v=${gitCommitSha}` : '';
   const target = `https://${previewUrl}`;
-  const src = `https://image.thum.io/get/width/${width}/${target}${cacheBuster}`;
+  const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
   return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
 };
 
@@ -313,7 +319,7 @@ export const getCommentBody = ({
     parts.push(
       '<details open><summary>🖼️ Preview screenshot</summary>',
       '',
-      formatScreenshot({ previewUrl, gitCommitSha }),
+      formatScreenshot({ previewUrl }),
       '',
       '</details>',
       '',

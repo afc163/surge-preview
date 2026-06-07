@@ -63,19 +63,26 @@ describe('formatQRCode', () => {
 });
 
 describe('formatScreenshot', () => {
-  it('renders a thumbnail that links to the preview via thum.io', () => {
+  it('renders a thumbnail with a stable URL and a maxAge refresh modifier', () => {
     expect(formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' })).toBe(
-      '<a href="https://a-b-pr-1.surge.sh"><img width="600" alt="Preview screenshot" src="https://image.thum.io/get/width/600/https://a-b-pr-1.surge.sh"></a>',
+      '<a href="https://a-b-pr-1.surge.sh"><img width="600" alt="Preview screenshot" src="https://image.thum.io/get/width/600/maxAge/1/https://a-b-pr-1.surge.sh"></a>',
     );
   });
 
-  it('honours a custom width', () => {
+  it('does not use a per-commit query cache-buster (avoids cold placeholder)', () => {
+    const html = formatScreenshot({ previewUrl: 'a-b-pr-1.surge.sh' });
+    expect(html).not.toContain('?v=');
+  });
+
+  it('honours a custom width and maxAge', () => {
     const html = formatScreenshot({
       previewUrl: 'a-b-pr-1.surge.sh',
       width: 800,
+      maxAgeHours: 0,
     });
     expect(html).toContain('width="800"');
     expect(html).toContain('/width/800/');
+    expect(html).toContain('/maxAge/0/');
   });
 });
 
@@ -138,7 +145,7 @@ describe('getCommentBody', () => {
     });
     expect(body).toContain('🖼️ Preview screenshot');
     expect(body).toContain(
-      'src="https://image.thum.io/get/width/600/https://owner-repo-preview-pr-1.surge.sh?v=2eeb596abcdef1234567890"',
+      'src="https://image.thum.io/get/width/600/maxAge/1/https://owner-repo-preview-pr-1.surge.sh"',
     );
   });
 
