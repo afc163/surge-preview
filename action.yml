@@ -25,6 +25,10 @@ inputs:
     description: 'Determines if the preview instance will be torn down on PR close'
     default: 'false'
     required: false
+  screenshot:
+    description: 'Embed a screenshot of the deployed preview in the PR comment (rendered via the thum.io service)'
+    default: 'false'
+    required: false
 outputs:
   preview_url:
     description: 'The url for the related PR preview'

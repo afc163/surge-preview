@@ -304,6 +304,7 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 | `dist`          | Dist folder deployed to [surge.sh](https://surge.sh/).                                                                            | `public`                                                                                                                                 |
 | `failOnError`   | Set `failed` if a deployment throws error. If not set, fallback to the `FAIL_ON__ERROR` environment variable.                     | `false`                                                                                                                                  |
 | `teardown`      | Determines if the preview instance will be torn down on PR close.                                                                 | `false`                                                                                                                                  |
+| `screenshot`    | Embed a screenshot of the deployed preview in the PR comment (rendered via the [thum.io](https://www.thum.io/) service).           | `false`                                                                                                                                  |
 
 ## 📤 Outputs
 

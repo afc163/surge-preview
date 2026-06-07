@@ -27,6 +27,8 @@ async function main() {
   const dist = core.getInput('dist');
   const teardown =
     core.getInput('teardown')?.toString().toLowerCase() === 'true';
+  const screenshot =
+    core.getInput('screenshot')?.toString().toLowerCase() === 'true';
   const failOnError = !!(
     core.getInput('failOnError') || process.env.FAIL_ON__ERROR
   );
@@ -224,6 +226,7 @@ async function main() {
         commitUrl,
         buildingLogUrl,
         duration,
+        screenshot,
       }),
     );
   } catch (err) {
