@@ -51,6 +51,19 @@ jest.mock('./commentToPullRequest', () => ({
   comment: (...args: unknown[]) => comment(...args),
 }));
 
+// `measureDist` and `warmScreenshot` reach the real filesystem / network
+// (node:fs and fetch + timers). Left real, they make the success async chain's
+// length nondeterministic — under parallel jest workers the libuv threadpool
+// can delay their I/O past the fixed flush budget below, so `updateCheck`
+// (which runs after `await measureDist`) intermittently hasn't been called yet.
+// Stub just these two so the chain settles deterministically; the rest of
+// helpers (getCommentBody, execSurgeCommand, parsePreviousDeployment) stays real.
+jest.mock('./helpers', () => ({
+  ...jest.requireActual('./helpers'),
+  measureDist: jest.fn().mockResolvedValue({ bytes: 0, files: 0 }),
+  warmScreenshot: jest.fn().mockResolvedValue(undefined),
+}));
+
 const flush = () => new Promise((resolve) => setImmediate(resolve));
 
 const inputs: Record<string, string> = {};
@@ -82,11 +95,12 @@ function setupPullRequestContext(fork = false) {
 async function runMain() {
   await jest.isolateModulesAsync(async () => {
     require('./main');
-    // Flush enough microtask turns for the full async chain (build → deploy →
-    // measure → check run → comment → optional lighthouse) to settle, even on
-    // slower CI where too few turns left the later steps (e.g. the success
-    // check-run update) unfinished.
-    for (let i = 0; i < 15; i += 1) {
+    // With the real fs/network I/O stubbed (see the ./helpers mock above), the
+    // success chain (build → deploy → measure → check run → comment → optional
+    // lighthouse) is all mocked promises, so it settles in a bounded, machine-
+    // independent number of microtask turns. A handful of flushes is plenty;
+    // this no longer races real I/O the way a count tuned to wall-clock did.
+    for (let i = 0; i < 5; i += 1) {
       await flush();
     }
   });
