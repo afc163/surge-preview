@@ -326,6 +326,17 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 
 > [!TIP]
 > The keyless PageSpeed Insights quota is small and shared across GitHub's runner IPs, so `lighthouse` may occasionally report no scores. Set a `PAGESPEED_API_KEY` (or `PSI_API_KEY`) [env var](https://docs.github.com/en/actions/learn-github-actions/variables) on the step to lift the limit — [get a key here](https://developers.google.com/speed/docs/insights/v5/get-started#APIKey).
+>
+> ```yaml
+>       - uses: afc163/surge-preview@v1
+>         with:
+>           lighthouse: true
+>           # ...other inputs
+>         env:
+>           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+> ```
+>
+> Note that `env` sits at the step level, alongside `with` — not inside it.
 
 ## 📤 Outputs
 

@@ -326,6 +326,17 @@ jobs:
 
 > [!TIP]
 > 免 key 的 PageSpeed Insights 额度很小，且由 GitHub runner 的 IP 共享，因此 `lighthouse` 偶尔会报告不出评分。在该步骤上设置 `PAGESPEED_API_KEY`（或 `PSI_API_KEY`）[环境变量](https://docs.github.com/en/actions/learn-github-actions/variables) 即可提升额度 —— [在此获取 key](https://developers.google.com/speed/docs/insights/v5/get-started#APIKey)。
+>
+> ```yaml
+>       - uses: afc163/surge-preview@v1
+>         with:
+>           lighthouse: true
+>           # ...其他输入参数
+>         env:
+>           PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
+> ```
+>
+> 注意 `env` 与 `with` 同级，位于 step 层级 —— 不要写进 `with` 里面。
 
 ## 📤 输出参数
 
