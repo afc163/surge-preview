@@ -1,6 +1,7 @@
 import { readdir, stat } from 'node:fs/promises';
 import { join } from 'node:path';
 import { exec } from '@actions/exec';
+import { pageSpeedReportUrl } from './lighthouse';
 
 interface ExecSurgeCommandOptions {
   command: string[];
@@ -226,8 +227,65 @@ export const formatScreenshot = ({
   maxAgeHours?: number;
 }) => {
   const target = `https://${previewUrl}`;
-  const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+  const src = screenshotUrl({ previewUrl, width, maxAgeHours });
   return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
+};
+
+// The thum.io image URL used by both the embedded screenshot and the warm-up
+// poll, kept in one place so the two can never drift apart.
+const screenshotUrl = ({
+  previewUrl,
+  width = 600,
+  maxAgeHours = 1,
+}: {
+  previewUrl: string;
+  width?: number;
+  maxAgeHours?: number;
+}): string =>
+  `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/https://${previewUrl}`;
+
+/**
+ * Warms thum.io's cache for a freshly deployed preview. thum.io returns a
+ * loading-placeholder GIF the first time it sees a brand-new ("cold") URL, and
+ * GitHub's camo image proxy then caches that placeholder — which is what makes
+ * the embedded screenshot look blank. By polling the same URL until thum.io
+ * serves a real capture (a non-GIF content-type, typically PNG) BEFORE we post
+ * the comment, camo's first fetch lands on the rendered image instead.
+ *
+ * Best-effort: any network error, timeout, or exhausted budget simply returns —
+ * a missing warm-up only means the screenshot may briefly show the placeholder,
+ * and must never affect the deployment result.
+ */
+export const warmScreenshot = async (
+  previewUrl: string,
+  {
+    attempts = 10,
+    intervalMs = 2000,
+    width = 600,
+    maxAgeHours = 1,
+  }: {
+    attempts?: number;
+    intervalMs?: number;
+    width?: number;
+    maxAgeHours?: number;
+  } = {},
+): Promise<void> => {
+  const url = screenshotUrl({ previewUrl, width, maxAgeHours });
+  for (let i = 0; i < attempts; i += 1) {
+    try {
+      const res = await fetch(url, { signal: AbortSignal.timeout(15_000) });
+      const type = res.headers.get('content-type') || '';
+      // A non-GIF image means thum.io has rendered the real capture.
+      if (res.ok && type.startsWith('image/') && !type.includes('gif')) {
+        return;
+      }
+    } catch {
+      // Swallow and retry; warm-up is purely a convenience.
+    }
+    if (i < attempts - 1) {
+      await new Promise((resolve) => setTimeout(resolve, intervalMs));
+    }
+  }
 };
 
 export type CommentStatus = 'building' | 'success' | 'fail' | 'destroy';
@@ -366,7 +424,8 @@ export interface CommentBodyOptions {
   logTail?: string;
   // Measured size of the built artifact, shown (with a delta) on success.
   dist?: DistStats;
-  // Pre-rendered Lighthouse scores block, appended to the success card.
+  // Pre-rendered Lighthouse scores (a horizontal sub-table), shown as a row
+  // inside the success card.
   lighthouse?: string;
   // When true, embed a screenshot of the live preview on the success card.
   screenshot?: boolean;
@@ -449,6 +508,15 @@ export const getCommentBody = ({
       value: formatQRCode({ previewUrl, size: 100 }),
     });
   }
+  // Lighthouse scores ride in the card as their own row: a label linking to the
+  // full PageSpeed Insights report, and a horizontal 4-column sub-table of
+  // scores as the value. `lighthouse` is pre-rendered by formatLighthouse.
+  if (status === 'success' && lighthouse) {
+    lines.push({
+      label: `🔦 <a href="${pageSpeedReportUrl(previewUrl)}">Lighthouse</a>`,
+      value: lighthouse,
+    });
+  }
 
   const image = formatImage({
     buildingLogUrl,
@@ -500,11 +568,6 @@ export const getCommentBody = ({
       '</details>',
       '',
     );
-  }
-
-  // On success, append the Lighthouse scores block when one was provided.
-  if (status === 'success' && lighthouse) {
-    parts.push(lighthouse, '');
   }
 
   if (previous) {

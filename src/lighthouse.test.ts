@@ -6,6 +6,7 @@ import {
   fetchLighthouseScores,
   formatLighthouse,
   hasAnyScore,
+  pageSpeedReportUrl,
 } from './lighthouse';
 
 const scores = (
@@ -54,26 +55,35 @@ describe('formatLighthouse', () => {
     ).toBe('');
   });
 
-  it('renders a collapsed table with a coloured dot per category', () => {
+  it('renders a horizontal sub-table with a coloured dot per category', () => {
     const out = formatLighthouse(scores());
-    expect(out).toContain('🔦 Lighthouse scores');
-    // >=90 green, >=50 orange, <50 red
-    expect(out).toContain(
-      '<tr><td>🟢 Performance</td><td><code>95</code></td></tr>',
-    );
-    expect(out).toContain(
-      '<tr><td>🟠 Accessibility</td><td><code>88</code></td></tr>',
-    );
-    expect(out).toContain(
-      '<tr><td>🟢 Best Practices</td><td><code>100</code></td></tr>',
-    );
-    expect(out).toContain('<tr><td>🟠 SEO</td><td><code>70</code></td></tr>');
+    // header row of short category names
+    expect(out).toContain('<sub>Perf</sub>');
+    expect(out).toContain('<sub>A11y</sub>');
+    expect(out).toContain('<sub>Best</sub>');
+    expect(out).toContain('<sub>SEO</sub>');
+    // score row: >=90 green, >=50 orange
+    expect(out).toContain('🟢 <code>95</code>');
+    expect(out).toContain('🟠 <code>88</code>');
+    expect(out).toContain('🟢 <code>100</code>');
+    expect(out).toContain('🟠 <code>70</code>');
+    // it is a sub-table, not the old collapsed details block
+    expect(out).toContain('<table>');
+    expect(out).not.toContain('<details>');
   });
 
   it('uses a red dot below 50 and skips null categories', () => {
     const out = formatLighthouse(scores({ performance: 30, seo: null }));
-    expect(out).toContain('🔴 Performance');
+    expect(out).toContain('🔴 <code>30</code>');
     expect(out).not.toContain('SEO');
+  });
+});
+
+describe('pageSpeedReportUrl', () => {
+  it('builds an encoded PSI analysis url for the preview host', () => {
+    expect(pageSpeedReportUrl('a-b-pr-1.surge.sh')).toBe(
+      'https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fa-b-pr-1.surge.sh',
+    );
   });
 });
 

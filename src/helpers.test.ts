@@ -13,6 +13,7 @@ import {
   measureDist,
   parsePreviousDeployment,
   tailLog,
+  warmScreenshot,
 } from './helpers';
 
 jest.mock('@actions/exec');
@@ -198,6 +199,62 @@ describe('formatScreenshot', () => {
   });
 });
 
+describe('warmScreenshot', () => {
+  const originalFetch = global.fetch;
+  afterEach(() => {
+    global.fetch = originalFetch;
+  });
+
+  const headers = (type: string) => ({
+    get: (name: string) => (name === 'content-type' ? type : null),
+  });
+
+  it('polls the same thum.io URL the screenshot embeds', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue({ ok: true, headers: headers('image/png') });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await warmScreenshot('a-b-pr-1.surge.sh');
+
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://image.thum.io/get/width/600/maxAge/1/https://a-b-pr-1.surge.sh',
+    );
+  });
+
+  it('stops as soon as a real (non-gif) image is served', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue({ ok: true, headers: headers('image/png') });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await warmScreenshot('a-b-pr-1.surge.sh', { attempts: 5, intervalMs: 0 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('retries while the placeholder gif is returned, then gives up', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValue({ ok: true, headers: headers('image/gif') });
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await warmScreenshot('a-b-pr-1.surge.sh', { attempts: 3, intervalMs: 0 });
+
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
+  it('swallows fetch errors and never throws', async () => {
+    const fetchMock = jest.fn().mockRejectedValue(new Error('network down'));
+    global.fetch = fetchMock as unknown as typeof fetch;
+
+    await expect(
+      warmScreenshot('a-b-pr-1.surge.sh', { attempts: 2, intervalMs: 0 }),
+    ).resolves.toBeUndefined();
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe('getCommentBody', () => {
   const baseOptions = {
     previewUrl: 'owner-repo-preview-pr-1.surge.sh',
@@ -378,13 +435,17 @@ describe('getCommentBody', () => {
     expect(body).not.toContain('📋 Build log');
   });
 
-  it('appends the Lighthouse block on success when provided', () => {
+  it('shows the Lighthouse scores as a card row linking to the PSI report', () => {
     const body = getCommentBody({
       ...baseOptions,
       status: 'success',
-      lighthouse: '<!-- lh -->LIGHTHOUSE-BLOCK',
+      lighthouse: '<table><tr><td>LH</td></tr></table>',
     });
-    expect(body).toContain('LIGHTHOUSE-BLOCK');
+    // The scores ride inside the card as a label/value row, the label linking
+    // to the full PageSpeed Insights report for this preview.
+    expect(body).toContain(
+      '<td>🔦 <a href="https://pagespeed.web.dev/analysis?url=https%3A%2F%2Fowner-repo-preview-pr-1.surge.sh">Lighthouse</a></td><td><table><tr><td>LH</td></tr></table></td>',
+    );
   });
 
   it('ignores the Lighthouse block on non-success statuses', () => {
@@ -394,6 +455,7 @@ describe('getCommentBody', () => {
       lighthouse: 'LIGHTHOUSE-BLOCK',
     });
     expect(body).not.toContain('LIGHTHOUSE-BLOCK');
+    expect(body).not.toContain('🔦');
   });
 
   it('renders a destroy card', () => {

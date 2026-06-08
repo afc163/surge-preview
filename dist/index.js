@@ -205,10 +205,11 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.formatScreenshot = exports.formatSizeDiff = exports.formatBytes = exports.measureDist = exports.formatLogSummary = exports.tailLog = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
+exports.getCommentBody = exports.parsePreviousDeployment = exports.encodeDeploymentMeta = exports.warmScreenshot = exports.formatScreenshot = exports.formatSizeDiff = exports.formatBytes = exports.measureDist = exports.formatLogSummary = exports.tailLog = exports.formatQRCode = exports.getCommentFooter = exports.formatImage = exports.execSurgeCommand = void 0;
 const promises_1 = __nccwpck_require__(1455);
 const node_path_1 = __nccwpck_require__(6760);
 const exec_1 = __nccwpck_require__(5236);
+const lighthouse_1 = __nccwpck_require__(1718);
 const execSurgeCommand = (_a) => __awaiter(void 0, [_a], void 0, function* ({ command, onOutput, }) {
     let myOutput = '';
     const capture = (data) => {
@@ -384,10 +385,45 @@ exports.formatSizeDiff = formatSizeDiff;
  */
 const formatScreenshot = ({ previewUrl, width = 600, maxAgeHours = 1, }) => {
     const target = `https://${previewUrl}`;
-    const src = `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/${target}`;
+    const src = screenshotUrl({ previewUrl, width, maxAgeHours });
     return `<a href="${target}"><img width="${width}" alt="Preview screenshot" src="${src}"></a>`;
 };
 exports.formatScreenshot = formatScreenshot;
+// The thum.io image URL used by both the embedded screenshot and the warm-up
+// poll, kept in one place so the two can never drift apart.
+const screenshotUrl = ({ previewUrl, width = 600, maxAgeHours = 1, }) => `https://image.thum.io/get/width/${width}/maxAge/${maxAgeHours}/https://${previewUrl}`;
+/**
+ * Warms thum.io's cache for a freshly deployed preview. thum.io returns a
+ * loading-placeholder GIF the first time it sees a brand-new ("cold") URL, and
+ * GitHub's camo image proxy then caches that placeholder — which is what makes
+ * the embedded screenshot look blank. By polling the same URL until thum.io
+ * serves a real capture (a non-GIF content-type, typically PNG) BEFORE we post
+ * the comment, camo's first fetch lands on the rendered image instead.
+ *
+ * Best-effort: any network error, timeout, or exhausted budget simply returns —
+ * a missing warm-up only means the screenshot may briefly show the placeholder,
+ * and must never affect the deployment result.
+ */
+const warmScreenshot = (previewUrl_1, ...args_1) => __awaiter(void 0, [previewUrl_1, ...args_1], void 0, function* (previewUrl, { attempts = 10, intervalMs = 2000, width = 600, maxAgeHours = 1, } = {}) {
+    const url = screenshotUrl({ previewUrl, width, maxAgeHours });
+    for (let i = 0; i < attempts; i += 1) {
+        try {
+            const res = yield fetch(url, { signal: AbortSignal.timeout(15000) });
+            const type = res.headers.get('content-type') || '';
+            // A non-GIF image means thum.io has rendered the real capture.
+            if (res.ok && type.startsWith('image/') && !type.includes('gif')) {
+                return;
+            }
+        }
+        catch (_a) {
+            // Swallow and retry; warm-up is purely a convenience.
+        }
+        if (i < attempts - 1) {
+            yield new Promise((resolve) => setTimeout(resolve, intervalMs));
+        }
+    }
+});
+exports.warmScreenshot = warmScreenshot;
 // Default screenshots hosted on GitHub user-images. Kept identical to the
 // previous inline URLs so existing behaviour is preserved.
 const STATUS_META = {
@@ -521,6 +557,15 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
             value: (0, exports.formatQRCode)({ previewUrl, size: 100 }),
         });
     }
+    // Lighthouse scores ride in the card as their own row: a label linking to the
+    // full PageSpeed Insights report, and a horizontal 4-column sub-table of
+    // scores as the value. `lighthouse` is pre-rendered by formatLighthouse.
+    if (status === 'success' && lighthouse) {
+        lines.push({
+            label: `🔦 <a href="${(0, lighthouse_1.pageSpeedReportUrl)(previewUrl)}">Lighthouse</a>`,
+            value: lighthouse,
+        });
+    }
     const image = (0, exports.formatImage)({
         buildingLogUrl,
         imageUrl: imageUrl !== null && imageUrl !== void 0 ? imageUrl : meta.imageUrl,
@@ -557,10 +602,6 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
     // page so reviewers see the change without opening the link.
     if (status === 'success' && screenshot) {
         parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
-    }
-    // On success, append the Lighthouse scores block when one was provided.
-    if (status === 'success' && lighthouse) {
-        parts.push(lighthouse, '');
     }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
@@ -638,12 +679,14 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.hasAnyScore = exports.fetchLighthouseScores = exports.formatLighthouse = void 0;
+exports.hasAnyScore = exports.fetchLighthouseScores = exports.formatLighthouse = exports.pageSpeedReportUrl = void 0;
 const core = __importStar(__nccwpck_require__(7484));
+// Shorter category names so four columns fit comfortably side by side inside
+// the preview card's right-hand cell.
 const CATEGORY_LABELS = [
-    { key: 'performance', label: 'Performance' },
-    { key: 'accessibility', label: 'Accessibility' },
-    { key: 'bestPractices', label: 'Best Practices' },
+    { key: 'performance', label: 'Perf' },
+    { key: 'accessibility', label: 'A11y' },
+    { key: 'bestPractices', label: 'Best' },
     { key: 'seo', label: 'SEO' },
 ];
 // Lighthouse's own thresholds: >=90 green, >=50 orange, otherwise red.
@@ -660,26 +703,37 @@ const scoreDot = (score) => {
     return '🔴';
 };
 /**
- * Renders the Lighthouse scores as a compact, collapsed table. Returns an empty
- * string when no category produced a score.
+ * Builds the PageSpeed Insights report URL for a preview host, so the comment's
+ * Lighthouse label can link to the full, interactive report.
+ */
+const pageSpeedReportUrl = (previewUrl) => `https://pagespeed.web.dev/analysis?url=${encodeURIComponent(`https://${previewUrl}`)}`;
+exports.pageSpeedReportUrl = pageSpeedReportUrl;
+/**
+ * Renders the Lighthouse scores as a compact, horizontal 4-column sub-table,
+ * meant to be embedded inside a single cell of the preview card. Each scored
+ * category gets its own column — a header row of category names and a row of
+ * coloured-dot + score. Returns an empty string when no category produced a
+ * score.
  */
 const formatLighthouse = (scores) => {
-    const rows = CATEGORY_LABELS.filter(({ key }) => scores[key] !== null).map(({ key, label }) => {
-        const score = scores[key];
-        return `  <tr><td>${scoreDot(score)} ${label}</td><td><code>${score}</code></td></tr>`;
-    });
-    if (rows.length === 0) {
+    const present = CATEGORY_LABELS.filter(({ key }) => scores[key] !== null);
+    if (present.length === 0) {
         return '';
     }
+    const headerCells = present
+        .map(({ label }) => `<td align="center"><sub>${label}</sub></td>`)
+        .join('');
+    const scoreCells = present
+        .map(({ key }) => {
+        const score = scores[key];
+        return `<td align="center">${scoreDot(score)} <code>${score}</code></td>`;
+    })
+        .join('');
     return [
-        '<details><summary>🔦 Lighthouse scores</summary>',
-        '',
         '<table>',
-        '  <tr><th>Category</th><th>Score</th></tr>',
-        ...rows,
+        `  <tr>${headerCells}</tr>`,
+        `  <tr>${scoreCells}</tr>`,
         '</table>',
-        '',
-        '</details>',
     ].join('\n');
 };
 exports.formatLighthouse = formatLighthouse;
@@ -1079,6 +1133,13 @@ function main() {
             const distStats = yield (0, helpers_1.measureDist)(`./${dist}`);
             core.info(`Artifact size: ${distStats.bytes} bytes, ${distStats.files} files`);
             yield publishCheckRun('success');
+            // When the screenshot is enabled, warm thum.io's cache before posting the
+            // comment so GitHub's image proxy captures the rendered screenshot rather
+            // than thum.io's cold-URL loading placeholder. Best-effort and self-bounded.
+            if (screenshot) {
+                core.info('Warming preview screenshot…');
+                yield (0, helpers_1.warmScreenshot)(url);
+            }
             // Post the success comment immediately so "Preview is ready" never waits on
             // the optional, slow Lighthouse audit. The builder reads the existing
             // comment body to recover the previous deployment for the size delta.
