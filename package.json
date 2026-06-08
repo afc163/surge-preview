@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.8.2",
-    "@types/jest": "^29.5.12",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.14.8",
     "@vercel/ncc": "^0.38.1",
     "husky": "^9.0.11",
