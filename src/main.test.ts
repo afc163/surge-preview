@@ -111,6 +111,28 @@ describe('main failure path (TDZ regression)', () => {
     expect(setFailed).not.toHaveBeenCalled();
   });
 
+  it('treats an explicit failOnError "false" as off', async () => {
+    setupPullRequestContext();
+    // A literal string 'false' must turn the option OFF — a naive `!!input`
+    // would treat it as truthy and wrongly mark the action as failed.
+    inputs.failOnError = 'false';
+    listForRef.mockRejectedValue(new Error('boom'));
+
+    await runMain();
+
+    expect(setFailed).not.toHaveBeenCalled();
+  });
+
+  it('marks the action as failed when failOnError is "true"', async () => {
+    setupPullRequestContext();
+    inputs.failOnError = 'true';
+    listForRef.mockRejectedValue(new Error('boom'));
+
+    await runMain();
+
+    expect(setFailed).toHaveBeenCalledWith('boom');
+  });
+
   it('does not comment on failure when the PR comes from a forked repo', async () => {
     setupPullRequestContext(true);
     listForRef.mockRejectedValue(new Error('boom'));
