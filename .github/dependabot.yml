@@ -1,14 +1,37 @@
 version: 2
 updates:
-  # Enable version updates for npm
+  # Keep npm dependencies up to date, batched into grouped PRs
   - package-ecosystem: 'npm'
     # Look for `package.json` and `lock` files in the `root` directory
     directory: '/'
-    # Check the npm registry for updates every day (weekdays)
     schedule:
-      interval: 'daily'
-  - package-ecosystem: "github-actions"
+      interval: 'weekly'
+    # Combine updates into a few grouped PRs instead of one PR per package
+    groups:
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'minor'
+          - 'patch'
+          - 'major'
+      development-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+          - 'major'
+
+  # Keep GitHub Actions up to date, batched into a single grouped PR
+  - package-ecosystem: 'github-actions'
     # Workflow files stored in the default location of `.github/workflows`
-    directory: "/"
+    directory: '/'
     schedule:
-      interval: 'daily'
+      interval: 'weekly'
+    groups:
+      github-actions:
+        patterns:
+          - '*'
+        update-types:
+          - 'minor'
+          - 'patch'
+          - 'major'
