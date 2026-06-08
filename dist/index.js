@@ -812,7 +812,7 @@ let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -828,7 +828,11 @@ function main() {
         const lighthouse = ((_b = core.getInput('lighthouse')) === null || _b === void 0 ? void 0 : _b.toString().toLowerCase()) === 'true';
         const setCommitStatus = ((_c = core.getInput('setCommitStatus')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
         const screenshot = ((_d = core.getInput('screenshot')) === null || _d === void 0 ? void 0 : _d.toString().toLowerCase()) === 'true';
-        const failOnError = !!(core.getInput('failOnError') || process.env.FAIL_ON__ERROR);
+        // Parse like the other boolean inputs: an explicit `failOnError: 'false'`
+        // must turn the option OFF. A plain `!!getInput(...)` would treat the string
+        // 'false' as truthy and wrongly enable it.
+        const failOnError = ((_e = core.getInput('failOnError')) === null || _e === void 0 ? void 0 : _e.toString().toLowerCase()) === 'true' ||
+            !!process.env.FAIL_ON__ERROR;
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
         const octokit = github.getOctokit(token);
@@ -840,11 +844,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_f = (_e = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _e === void 0 ? void 0 : _e.head) === null || _f === void 0 ? void 0 : _f.sha) ||
-            ((_g = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _g === void 0 ? void 0 : _g.head_sha);
+            ((_g = (_f = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _f === void 0 ? void 0 : _f.head) === null || _g === void 0 ? void 0 : _g.sha) ||
+            ((_h = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _h === void 0 ? void 0 : _h.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_h = payload.pull_request) === null || _h === void 0 ? void 0 : _h.head}`);
-        const fromForkedRepo = (_j = payload.pull_request) === null || _j === void 0 ? void 0 : _j.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_j = payload.pull_request) === null || _j === void 0 ? void 0 : _j.head}`);
+        const fromForkedRepo = (_k = payload.pull_request) === null || _k === void 0 ? void 0 : _k.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -981,12 +985,9 @@ function main() {
             return;
         }
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
-        // 尝试获取 check_run_id，逻辑不是很严谨
-        let checkRunId;
-        if (((_k = data === null || data === void 0 ? void 0 : data.check_runs) === null || _k === void 0 ? void 0 : _k.length) >= 0) {
-            const checkRun = (_l = data === null || data === void 0 ? void 0 : data.check_runs) === null || _l === void 0 ? void 0 : _l.find((item) => item.name === job);
-            checkRunId = checkRun === null || checkRun === void 0 ? void 0 : checkRun.id;
-        }
+        // Find the check run matching this job; `.find` on an absent/empty array
+        // simply yields undefined, so no length guard is needed.
+        const checkRunId = (_m = (_l = data === null || data === void 0 ? void 0 : data.check_runs) === null || _l === void 0 ? void 0 : _l.find((item) => item.name === job)) === null || _m === void 0 ? void 0 : _m.id;
         if (checkRunId) {
             buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`;
         }
@@ -1016,7 +1017,11 @@ function main() {
         // While a new build is running, carry forward the previous deployment that
         // is still live, recovered from the existing comment body.
         yield publishCheckRun('building');
-        commentIfNotForkedRepo((previousBody) => (0, helpers_1.getCommentBody)({
+        // Await the building comment so its create can't race the later success
+        // comment: on a fast build, an un-awaited create here could still be in
+        // flight when the success comment runs `findPreviousComment`, and both would
+        // then create their own comment — leaving two surge-preview comments on the PR.
+        yield commentIfNotForkedRepo((previousBody) => (0, helpers_1.getCommentBody)({
             status: 'building',
             previewUrl: url,
             gitCommitSha: commitSha,

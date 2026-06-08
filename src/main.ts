@@ -40,9 +40,12 @@ async function main() {
     core.getInput('setCommitStatus')?.toString().toLowerCase() === 'true';
   const screenshot =
     core.getInput('screenshot')?.toString().toLowerCase() === 'true';
-  const failOnError = !!(
-    core.getInput('failOnError') || process.env.FAIL_ON__ERROR
-  );
+  // Parse like the other boolean inputs: an explicit `failOnError: 'false'`
+  // must turn the option OFF. A plain `!!getInput(...)` would treat the string
+  // 'false' as truthy and wrongly enable it.
+  const failOnError =
+    core.getInput('failOnError')?.toString().toLowerCase() === 'true' ||
+    !!process.env.FAIL_ON__ERROR;
   failOnErrorGlobal = failOnError;
   core.debug(
     `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`,
@@ -215,12 +218,9 @@ async function main() {
 
   core.debug(JSON.stringify(data?.check_runs, null, 2));
 
-  // 尝试获取 check_run_id，逻辑不是很严谨
-  let checkRunId;
-  if (data?.check_runs?.length >= 0) {
-    const checkRun = data?.check_runs?.find((item) => item.name === job);
-    checkRunId = checkRun?.id;
-  }
+  // Find the check run matching this job; `.find` on an absent/empty array
+  // simply yields undefined, so no length guard is needed.
+  const checkRunId = data?.check_runs?.find((item) => item.name === job)?.id;
 
   if (checkRunId) {
     buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`;
@@ -256,7 +256,11 @@ async function main() {
   // While a new build is running, carry forward the previous deployment that
   // is still live, recovered from the existing comment body.
   await publishCheckRun('building');
-  commentIfNotForkedRepo((previousBody) =>
+  // Await the building comment so its create can't race the later success
+  // comment: on a fast build, an un-awaited create here could still be in
+  // flight when the success comment runs `findPreviousComment`, and both would
+  // then create their own comment — leaving two surge-preview comments on the PR.
+  await commentIfNotForkedRepo((previousBody) =>
     getCommentBody({
       status: 'building',
       previewUrl: url,
