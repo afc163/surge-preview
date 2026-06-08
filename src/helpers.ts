@@ -498,7 +498,6 @@ export const getCommentBody = ({
     label: '🪵 Logs',
     value: `<a href="${buildingLogUrl}">View logs</a>`,
   });
-  lines.push({ label: '🕐 Updated', value: `<code>${updatedAt}</code> UTC` });
   // Only the live preview (success) has a reachable URL worth scanning, so the
   // QR code rides along as a regular label/value row — label on the left, the
   // scannable image on the right — to match the rest of the card.

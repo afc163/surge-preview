@@ -290,13 +290,11 @@ describe('getCommentBody', () => {
     expect(body).toContain(
       '<a href="https://github.com/afc163/surge-preview/runs/123">View logs</a>',
     );
-    expect(body).toContain(
-      '<td>🕐 Updated</td><td><code>2026-06-05 04:12:33</code> UTC</td>',
-    );
     // screenshot lives inside the table and spans the rows via rowspan; the
-    // success card has an extra QR row, so the screenshot spans 7 rows
+    // success card has Preview, Commit, Build time, Size, Logs and Mobile rows
+    // (6) so the screenshot spans 6 rows
     expect(body).toContain('<table>');
-    expect(body).toContain('rowspan="7"');
+    expect(body).toContain('rowspan="6"');
     expect(body).toContain('width="200"');
     expect(body).toContain('alt="PR preview ✅ Ready"');
     // a scannable QR code to the live preview is rendered as a label/value row
@@ -402,8 +400,8 @@ describe('getCommentBody', () => {
     expect(body).toContain('<b>⚡️ Building</b>');
     expect(body).not.toContain('Build time');
     expect(body).not.toContain('<code>12.3s</code>');
-    // one fewer detail row than the success card → smaller rowspan
-    expect(body).toContain('rowspan="5"');
+    // fewer detail rows than the success card (Preview, Commit, Logs) → smaller rowspan
+    expect(body).toContain('rowspan="4"');
     // the preview is not live yet, so no QR code is shown
     expect(body).not.toContain('📱 Scan to open on mobile');
   });
