@@ -133,6 +133,30 @@ describe('main failure path (TDZ regression)', () => {
     expect(setFailed).toHaveBeenCalledWith('boom');
   });
 
+  it('treats FAIL_ON__ERROR="false" env var as off', async () => {
+    setupPullRequestContext();
+    // The env-var fallback must parse like the input: a literal 'false'
+    // turns it off rather than being treated as truthy.
+    process.env.FAIL_ON__ERROR = 'false';
+    listForRef.mockRejectedValue(new Error('boom'));
+
+    await runMain();
+
+    expect(setFailed).not.toHaveBeenCalled();
+    delete process.env.FAIL_ON__ERROR;
+  });
+
+  it('marks failed when FAIL_ON__ERROR env var is set to a truthy value', async () => {
+    setupPullRequestContext();
+    process.env.FAIL_ON__ERROR = '1';
+    listForRef.mockRejectedValue(new Error('boom'));
+
+    await runMain();
+
+    expect(setFailed).toHaveBeenCalledWith('boom');
+    delete process.env.FAIL_ON__ERROR;
+  });
+
   it('does not comment on failure when the PR comes from a forked repo', async () => {
     setupPullRequestContext(true);
     listForRef.mockRejectedValue(new Error('boom'));

@@ -599,9 +599,10 @@ const getCommentBody = ({ status, previewUrl, gitCommitSha, commitUrl, buildingL
         }
     }
     // On success, optionally embed a screenshot of the live preview's landing
-    // page so reviewers see the change without opening the link.
+    // page so reviewers see the change without opening the link. Collapsed by
+    // default to keep the comment compact; reviewers expand it on demand.
     if (status === 'success' && screenshot) {
-        parts.push('<details open><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
+        parts.push('<details><summary>🖼️ Preview screenshot</summary>', '', (0, exports.formatScreenshot)({ previewUrl }), '', '</details>', '');
     }
     if (previous) {
         const badge = (_a = PREVIOUS_BADGE[previous.status]) !== null && _a !== void 0 ? _a : '';
@@ -866,7 +867,7 @@ let failOnErrorGlobal = false;
 let fail;
 function main() {
     return __awaiter(this, void 0, void 0, function* () {
-        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m;
+        var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l, _m, _o;
         // Provide a default fail handler immediately so that errors thrown before the
         // richer `fail` (with PR comment) is assigned are still surfaced, rather than
         // being silently swallowed by `fail?.()` in the bottom catch — which would
@@ -883,10 +884,12 @@ function main() {
         const setCommitStatus = ((_c = core.getInput('setCommitStatus')) === null || _c === void 0 ? void 0 : _c.toString().toLowerCase()) === 'true';
         const screenshot = ((_d = core.getInput('screenshot')) === null || _d === void 0 ? void 0 : _d.toString().toLowerCase()) === 'true';
         // Parse like the other boolean inputs: an explicit `failOnError: 'false'`
-        // must turn the option OFF. A plain `!!getInput(...)` would treat the string
-        // 'false' as truthy and wrongly enable it.
-        const failOnError = ((_e = core.getInput('failOnError')) === null || _e === void 0 ? void 0 : _e.toString().toLowerCase()) === 'true' ||
-            !!process.env.FAIL_ON__ERROR;
+        // (or `FAIL_ON__ERROR=false`) must turn the option OFF. A plain `!!` would
+        // treat the string 'false' as truthy and wrongly enable it. The env var keeps
+        // accepting any other non-empty value (e.g. '1') as on, for backwards compat.
+        const envFailOnError = (_e = process.env.FAIL_ON__ERROR) === null || _e === void 0 ? void 0 : _e.toLowerCase();
+        const failOnError = ((_f = core.getInput('failOnError')) === null || _f === void 0 ? void 0 : _f.toString().toLowerCase()) === 'true' ||
+            (!!envFailOnError && envFailOnError !== 'false');
         failOnErrorGlobal = failOnError;
         core.debug(`failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`);
         const octokit = github.getOctokit(token);
@@ -898,11 +901,11 @@ function main() {
         core.debug(`payload.after: ${payload.after}`);
         core.debug(`payload.pull_request: ${payload.pull_request}`);
         const gitCommitSha = payload.after ||
-            ((_g = (_f = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _f === void 0 ? void 0 : _f.head) === null || _g === void 0 ? void 0 : _g.sha) ||
-            ((_h = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _h === void 0 ? void 0 : _h.head_sha);
+            ((_h = (_g = payload === null || payload === void 0 ? void 0 : payload.pull_request) === null || _g === void 0 ? void 0 : _g.head) === null || _h === void 0 ? void 0 : _h.sha) ||
+            ((_j = payload === null || payload === void 0 ? void 0 : payload.workflow_run) === null || _j === void 0 ? void 0 : _j.head_sha);
         core.debug(JSON.stringify(github.context.repo, null, 2));
-        core.debug(`payload.pull_request?.head: ${(_j = payload.pull_request) === null || _j === void 0 ? void 0 : _j.head}`);
-        const fromForkedRepo = (_k = payload.pull_request) === null || _k === void 0 ? void 0 : _k.head.repo.fork;
+        core.debug(`payload.pull_request?.head: ${(_k = payload.pull_request) === null || _k === void 0 ? void 0 : _k.head}`);
+        const fromForkedRepo = (_l = payload.pull_request) === null || _l === void 0 ? void 0 : _l.head.repo.fork;
         if (payload.number && payload.pull_request) {
             core.debug('prNumber retrieved from pull_request');
             prNumber = payload.number;
@@ -1041,7 +1044,7 @@ function main() {
         core.debug(JSON.stringify(data === null || data === void 0 ? void 0 : data.check_runs, null, 2));
         // Find the check run matching this job; `.find` on an absent/empty array
         // simply yields undefined, so no length guard is needed.
-        const checkRunId = (_m = (_l = data === null || data === void 0 ? void 0 : data.check_runs) === null || _l === void 0 ? void 0 : _l.find((item) => item.name === job)) === null || _m === void 0 ? void 0 : _m.id;
+        const checkRunId = (_o = (_m = data === null || data === void 0 ? void 0 : data.check_runs) === null || _m === void 0 ? void 0 : _m.find((item) => item.name === job)) === null || _o === void 0 ? void 0 : _o.id;
         if (checkRunId) {
             buildingLogUrl = `https://github.com/${github.context.repo.owner}/${github.context.repo.repo}/runs/${checkRunId}`;
         }

@@ -42,11 +42,13 @@ async function main() {
   const screenshot =
     core.getInput('screenshot')?.toString().toLowerCase() === 'true';
   // Parse like the other boolean inputs: an explicit `failOnError: 'false'`
-  // must turn the option OFF. A plain `!!getInput(...)` would treat the string
-  // 'false' as truthy and wrongly enable it.
+  // (or `FAIL_ON__ERROR=false`) must turn the option OFF. A plain `!!` would
+  // treat the string 'false' as truthy and wrongly enable it. The env var keeps
+  // accepting any other non-empty value (e.g. '1') as on, for backwards compat.
+  const envFailOnError = process.env.FAIL_ON__ERROR?.toLowerCase();
   const failOnError =
     core.getInput('failOnError')?.toString().toLowerCase() === 'true' ||
-    !!process.env.FAIL_ON__ERROR;
+    (!!envFailOnError && envFailOnError !== 'false');
   failOnErrorGlobal = failOnError;
   core.debug(
     `failOnErrorGlobal: ${typeof failOnErrorGlobal} + ${failOnErrorGlobal.toString()}`,
