@@ -8,6 +8,7 @@ import {
   getCommentBody,
   measureDist,
   parsePreviousDeployment,
+  warmScreenshot,
 } from './helpers';
 import {
   fetchLighthouseScores,
@@ -325,6 +326,14 @@ async function main() {
     );
 
     await publishCheckRun('success');
+
+    // When the screenshot is enabled, warm thum.io's cache before posting the
+    // comment so GitHub's image proxy captures the rendered screenshot rather
+    // than thum.io's cold-URL loading placeholder. Best-effort and self-bounded.
+    if (screenshot) {
+      core.info('Warming preview screenshot…');
+      await warmScreenshot(url);
+    }
 
     // Post the success comment immediately so "Preview is ready" never waits on
     // the optional, slow Lighthouse audit. The builder reads the existing
