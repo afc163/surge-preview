@@ -558,10 +558,11 @@ export const getCommentBody = ({
   }
 
   // On success, optionally embed a screenshot of the live preview's landing
-  // page so reviewers see the change without opening the link.
+  // page so reviewers see the change without opening the link. Collapsed by
+  // default to keep the comment compact; reviewers expand it on demand.
   if (status === 'success' && screenshot) {
     parts.push(
-      '<details open><summary>🖼️ Preview screenshot</summary>',
+      '<details><summary>🖼️ Preview screenshot</summary>',
       '',
       formatScreenshot({ previewUrl }),
       '',
