@@ -2,10 +2,10 @@ const warning = jest.fn();
 jest.mock('@actions/core', () => ({ warning }));
 
 import {
-  type LighthouseScores,
   fetchLighthouseScores,
   formatLighthouse,
   hasAnyScore,
+  type LighthouseScores,
   pageSpeedReportUrl,
 } from './lighthouse';
 

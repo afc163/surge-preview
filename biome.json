@@ -1,6 +1,7 @@
 {
+  "$schema": "https://biomejs.dev/schemas/2.4.16/schema.json",
   "files": {
-    "ignore": ["./dist/**/*", "./lib/**/*", "node_modules"]
+    "includes": ["**", "!dist/**/*", "!lib/**/*", "!**/node_modules"]
   },
   "formatter": {
     "enabled": true,
@@ -16,9 +17,11 @@
       "recommended": false,
       "complexity": {
         "noExtraBooleanCast": "error",
-        "noMultipleSpacesInRegularExpressionLiterals": "error",
         "noStaticOnlyClass": "error",
-        "noUselessConstructor": "error"
+        "noUselessConstructor": "error",
+        "noAdjacentSpacesInRegex": "error",
+        "noArguments": "error",
+        "noCommaOperator": "error"
       },
       "correctness": {
         "noConstAssign": "error",
@@ -28,7 +31,6 @@
         "noGlobalObjectCalls": "error",
         "noInnerDeclarations": "error",
         "noInvalidConstructorSuper": "error",
-        "noNewSymbol": "error",
         "noSelfAssign": "error",
         "noSwitchDeclarations": "error",
         "noUndeclaredVariables": "error",
@@ -38,15 +40,14 @@
         "noUnusedLabels": "error",
         "noUnusedVariables": "error",
         "useIsNan": "error",
-        "useYield": "error"
+        "useYield": "error",
+        "noInvalidBuiltinInstantiation": "error",
+        "useValidTypeof": "error"
       },
       "style": {
-        "noArguments": "error",
-        "noCommaOperator": "error",
         "noInferrableTypes": "error",
         "noNamespace": "error",
         "noNonNullAssertion": "warn",
-        "noVar": "error",
         "useConsistentArrayType": "error",
         "useConst": "error",
         "useForOf": "warn",
@@ -73,7 +74,7 @@
         "noMisleadingInstantiator": "error",
         "noRedeclare": "error",
         "noUnsafeNegation": "error",
-        "useValidTypeof": "error"
+        "noVar": "error"
       }
     }
   },
