@@ -30,6 +30,9 @@ jobs:
             mkdir -p public/preview
             npm install
             npm run build-preview -- public/preview
+        env:
+          # Lifts the keyless PageSpeed rate limit (shared runner IPs hit 429).
+          PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
       - name: Get the output url
         run: echo "url => ${{ steps.preview_step.outputs.preview_url }}"
   preview2:
@@ -52,5 +55,8 @@ jobs:
             mkdir -p public/preview2
             npm install
             npm run build-preview -- public/preview2
+        env:
+          # Lifts the keyless PageSpeed rate limit (shared runner IPs hit 429).
+          PAGESPEED_API_KEY: ${{ secrets.PAGESPEED_API_KEY }}
       - name: Get the output url
         run: echo "url => ${{ steps.preview_action.outputs.preview_url }}"
