@@ -8,6 +8,7 @@
 [![Marketplace][marketplace-image]][marketplace-url]
 [![Release][release-image]][release-url]
 [![License][license-image]][license-url]
+[![Sponsor][sponsor-image]][sponsor-url]
 
 [ci-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
 [ci-url]: https://github.com/afc163/surge-preview/actions?query=workflow%3Abuild-test
@@ -17,6 +18,8 @@
 [release-url]: https://github.com/afc163/surge-preview/releases
 [license-image]: https://img.shields.io/github/license/afc163/surge-preview
 [license-url]: https://github.com/afc163/surge-preview/blob/main/LICENSE
+[sponsor-image]: https://img.shields.io/badge/sponsor-%E2%9D%A4-db61a2?logo=githubsponsors
+[sponsor-url]: https://github.com/sponsors/afc163
 
 English | [简体中文](./README.zh-CN.md)
 
@@ -388,3 +391,9 @@ However, when the workflow runs, the usual comment is updated by the `surge-prev
 
 - [jwalton/gh-find-current-pr](https://github.com/jwalton/gh-find-current-pr)
 - [marocchino/sticky-pull-request-comment](https://github.com/marocchino/sticky-pull-request-comment)
+
+## ❤️ Sponsor
+
+If you find `surge-preview` useful, please consider sponsoring its development. Your support helps keep the project maintained and improved.
+
+- [Sponsor @afc163 on GitHub](https://github.com/sponsors/afc163)
