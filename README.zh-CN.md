@@ -10,8 +10,8 @@
 [![License][license-image]][license-url]
 [![Sponsor][sponsor-image]][sponsor-url]
 
-[ci-image]: https://github.com/afc163/surge-preview/workflows/build-test/badge.svg
-[ci-url]: https://github.com/afc163/surge-preview/actions?query=workflow%3Abuild-test
+[ci-image]: https://github.com/afc163/surge-preview/actions/workflows/test.yml/badge.svg
+[ci-url]: https://github.com/afc163/surge-preview/actions/workflows/test.yml
 [marketplace-image]: https://img.shields.io/badge/marketplace-surge--pr--preview-blue?logo=github
 [marketplace-url]: https://github.com/marketplace/actions/surge-pr-preview
 [release-image]: https://img.shields.io/github/v/release/afc163/surge-preview?sort=semver&logo=github
