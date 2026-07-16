@@ -36,14 +36,14 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
     "@types/jest": "^30.0.0",
-    "@types/node": "^25.9.2",
-    "@vercel/ncc": "^0.38.1",
+    "@types/node": "^26.1.1",
+    "@vercel/ncc": "^0.44.1",
     "husky": "^9.0.11",
     "jest": "^30.4.2",
     "jest-circus": "^30.4.2",
     "lint-staged": "^17.0.7",
     "ts-jest": "^29.4.11",
-    "typescript": "^5.0.0"
+    "typescript": "^7.0.2"
   },
   "lint-staged": {
     "*": "biome check --write --files-ignore-unknown=true --no-errors-on-unmatched"
